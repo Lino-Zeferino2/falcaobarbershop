@@ -2,6 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+
+
 import 'package:firebase_auth/firebase_auth.dart';
 import '../controller/auth_controller.dart';
 import '../model/user_model.dart';
@@ -940,7 +944,7 @@ Container(
             _openUrl('https://wa.me/351925203598?text=$message');
           },
           child:  Icon(
-            Icons.message_sharp,
+            FontAwesomeIcons.whatsapp,
             color: Colors.white,
           ),
         ),
@@ -1512,7 +1516,7 @@ Container(
 
     Widget _socialIconButton(
       BuildContext context, {
-      required IconData icon,
+      required FaIconData icon,
       required String label,
       required Color color,
       required VoidCallback onPressed,
@@ -1535,8 +1539,8 @@ Container(
               borderRadius: BorderRadius.circular(999),
               border: Border.all(color: color.withOpacity(0.7), width: 1),
             ),
-            child: Icon(
-              icon,
+            child: FaIcon(
+            icon,
               color: color,
               size: isMobile ? 20 : 22,
             ),
@@ -1709,25 +1713,27 @@ Container(
                         children: [
                           _socialIconButton(
                             context,
-                            icon: Icons.camera_alt_rounded,
+                            icon: FontAwesomeIcons.whatsapp,
+                            label: 'WhatsApp',
+                            color: const Color(0xFFB22222),
+                            onPressed: () => _openUrl('https://wa.me/351925203598'),
+                          ),
+                          _socialIconButton(
+                            context,
+                            icon: FontAwesomeIcons.instagram,
                             label: 'Instagram',
                             color: const Color(0xFFB22222),
                             onPressed: () => _openUrl('https://www.instagram.com/falcao_barbershop?igsh=MWdydHQzZ292dThldw=='),
                           ),
                           _socialIconButton(
                             context,
-                            icon: Icons.music_note_rounded,
+                            icon: FontAwesomeIcons.tiktok,
                             label: 'TikTok',
                             color: const Color(0xFFB22222),
                             onPressed: () => _openUrl('https://www.tiktok.com/@falcaobarbershop?_r=1&_t=ZS-97F6iWxZU4D'),
                           ),
-                          _socialIconButton(
-                            context,
-                            icon: Icons.chat_rounded,
-                            label: 'WhatsApp',
-                            color: const Color(0xFFB22222),
-                            onPressed: () => _openUrl('https://wa.me/351925203598'),
-                          ),
+
+
                         ],
                       ),
                     ],
