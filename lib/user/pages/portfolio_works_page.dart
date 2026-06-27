@@ -84,7 +84,7 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
         .replaceFirstMapped(RegExp(r'^(.)'), (m) => m.group(1)!.toUpperCase());
   }
 
-Widget _videoCard(String assetPath, {String? webUrl, required int index}) {
+  Widget _videoCard(String assetPath, {String? webUrl, required int index}) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: Container(
@@ -97,7 +97,7 @@ Widget _videoCard(String assetPath, {String? webUrl, required int index}) {
           child: Stack(
             fit: StackFit.expand,
             children: [
-_LocalVideoPlayer(
+              _LocalVideoPlayer(
                 assetPath: assetPath,
                 webUrl: webUrl,
                 isPlaying: _videoIsPlaying[index],
@@ -179,16 +179,7 @@ _LocalVideoPlayer(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 10),
-              Text(
-                'Nosso portifólio',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.72),
-                  fontSize: isDesktop ? 22 : 18,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.3,
-                ),
-                textAlign: TextAlign.center,
-              ),
+       
               const SizedBox(height: 10),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -197,7 +188,7 @@ _LocalVideoPlayer(
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: isDesktop ? 44 : 34,
+                    fontSize: isDesktop ? 44 : 24,
                     fontWeight: FontWeight.w900,
                     height: 1.05,
                     letterSpacing: 0.2,
@@ -292,9 +283,7 @@ _LocalVideoPlayer(
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final isDesktop = constraints.maxWidth > 900;
-                          final crossAxisCount = isDesktop
-                              ? 3
-                              : (constraints.maxWidth > 600 ? 2 : 1);
+                          final crossAxisCount = isDesktop ? 3 : 2;
 
                           return GridView.builder(
                             shrinkWrap: true,
@@ -311,7 +300,11 @@ _LocalVideoPlayer(
                               final assetPath = 'assets/videos/$slug';
                               final webUrl = _webPublicUrl(slug);
 
-return _videoCard(assetPath, webUrl: webUrl, index: index);
+                              return _videoCard(
+                                assetPath,
+                                webUrl: webUrl,
+                                index: index,
+                              );
                             },
                           );
                         },
@@ -367,9 +360,7 @@ return _videoCard(assetPath, webUrl: webUrl, index: index);
                           return LayoutBuilder(
                             builder: (context, constraints) {
                               final isDesktop = constraints.maxWidth > 900;
-                              final crossAxisCount = isDesktop
-                                  ? 3
-                                  : (constraints.maxWidth > 600 ? 2 : 1);
+                              final crossAxisCount = isDesktop ? 3 : 2;
 
                               return GridView.builder(
                                 shrinkWrap: true,
