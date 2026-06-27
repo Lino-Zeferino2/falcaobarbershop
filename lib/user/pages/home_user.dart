@@ -29,6 +29,10 @@ class _HomeUserState extends State<HomeUser> with SingleTickerProviderStateMixin
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+  late Animation<Offset> _heroImageFloatAnimation;
+  late Animation<double> _heroImageScaleAnimation;
+
+
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _heroKey = GlobalKey();
@@ -116,9 +120,23 @@ class _HomeUserState extends State<HomeUser> with SingleTickerProviderStateMixin
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
+    // Animação para o componente da imagem no hero (falcao.jpg)
+    _heroImageFloatAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(0, -12),
+    ).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
 
- 
+    _heroImageScaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.03,
+    ).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+
     // Verificar estado de autenticação
+
     _checkAuthState();
 
     // Carregar configurações
@@ -664,12 +682,25 @@ Container(
                                       ],
                                     ),
                                     padding: const EdgeInsets.all(6),
-                                    child: ClipOval(
-                                      child: Image.asset(
-                                        'assets/images/falcao.jpg',
-                                        fit: BoxFit.cover,
+                                child: AnimatedBuilder(
+                                      animation: _animationController,
+                                      builder: (context, child) {
+                                        return Transform.translate(
+                                          offset: _heroImageFloatAnimation.value,
+                                          child: Transform.scale(
+                                            scale: _heroImageScaleAnimation.value,
+                                            child: child,
+                                          ),
+                                        );
+                                      },
+                                      child: ClipOval(
+                                        child: Image.asset(
+                                          'assets/images/falcao.jpg',
+                                          fit: BoxFit.cover,
+                                        ),
                                       ),
                                     ),
+
                                   ),
                                 ),
                               ),
@@ -737,12 +768,25 @@ Container(
                                   ],
                                 ),
                                 padding: const EdgeInsets.all(0),
-                                child: ClipOval(
-                                  child: Image.asset(
-                                    'assets/images/falcao.jpg',
-                                    fit: BoxFit.cover,
+                                child: AnimatedBuilder(
+                                  animation: _animationController,
+                                  builder: (context, child) {
+                                    return Transform.translate(
+                                      offset: _heroImageFloatAnimation.value,
+                                      child: Transform.scale(
+                                        scale: _heroImageScaleAnimation.value,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                                  child: ClipOval(
+                                    child: Image.asset(
+                                      'assets/images/falcao.jpg',
+                                      fit: BoxFit.cover,
+                                    ),
                                   ),
                                 ),
+
                               ),
                             ),
                           ),
