@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../firestore_instance.dart';
 import '../controller/auth_controller.dart';
 import '../model/user_model.dart';
@@ -18,7 +17,6 @@ import 'history_page.dart';
 import 'points_offers_page.dart';
 import 'vip_subscription_page.dart';
 import 'anonymous_appointments_page.dart';
-import 'testimonials_page.dart';
 import 'portfolio_works_page.dart';
 
 
@@ -34,55 +32,25 @@ class _HomeUserState extends State<HomeUser> with SingleTickerProviderStateMixin
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
-  late Animation<double> _glowAnimation;
   final TextEditingController _searchController = TextEditingController();
-  bool _showAllServices = false;
-  bool _showAllImages = false;
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _heroKey = GlobalKey();
-  final GlobalKey _servicesKey = GlobalKey();
-  final GlobalKey _vipKey = GlobalKey();
-  final GlobalKey _barbersKey = GlobalKey();
-  final GlobalKey _contactKey = GlobalKey();
-  final GlobalKey _galleryKey = GlobalKey();
-
-
   User? _currentUser;
   UserModel? _userModel;
   final AuthController _authController = AuthController();
-  Stream<List<VipPlanModel>>? _vipPlansStream;
   SettingsModel? _settings;
-  Stream<List<BarbeariaModel>>? _barbeariasStream;
-  Stream<List<ServiceModel>>? _servicesStream;
-  Stream<List<ProfissionalModel>>? _profissionaisStream;
+
   VipSubscriptionModel? _userVipSubscription;
-  VipPlanModel? _userVipPlan;
+
   bool _isAtTop = true;
-  int _totalUsers = 0;
-  int _totalAppointments = 0;
+
+  final GlobalKey _servicesKey = GlobalKey();
 
   Future<void> _getSettings() async {
     _settings = await AdminController().getSettings();
     if (mounted) setState(() {});
   }
 
-Future<void> _getStats() async {
-    try {
-      final snap = await firestore
-          .collection('stats')
-          .doc('home')
-          .get();
-
-      if (snap.exists && mounted) {
-        setState(() {
-          _totalUsers = snap['totalUsers'] ?? 0;
-          _totalAppointments = snap['totalAppointments'] ?? 0;
-        });
-      }
-    } catch (e) {
-      print('Error fetching stats: $e');
-    }
-  }
 
   Future<void> _openUrl(String url) async {
     try {
@@ -151,23 +119,15 @@ Future<void> _getStats() async {
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
-    _glowAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
 
-    _vipPlansStream = AdminController().getAllVipPlans();
-    _servicesStream = AdminController().getAllActiveServices();
-    _barbeariasStream = AdminController().getAllBarbearias();
-    _profissionaisStream = AdminController().getAllProfissionais();
-
+ 
     // Verificar estado de autenticação
     _checkAuthState();
 
     // Carregar configurações
     _getSettings();
 
-    // Carregar estatísticas
-    _getStats();
+ 
 
     // Scroll to services if requested
     if (widget.scrollToServices) {
@@ -189,23 +149,7 @@ Future<void> _getStats() async {
 });
 
   }
-void _scrollToTop() {
-  _scrollController.animateTo(
-    0,
-    duration: const Duration(milliseconds: 700),
-    curve: Curves.easeInOutCubic,
-  );
-}
 //Metodo para scroll
-void _scrollToBottom() {
-  if (!_scrollController.hasClients) return;
-
-  _scrollController.animateTo(
-    _scrollController.position.maxScrollExtent,
-    duration: const Duration(milliseconds: 900),
-    curve: Curves.easeInOutCubic,
-  );
-}
 
   void _checkAuthState() {
     FirebaseAuth.instance.authStateChanges().listen((User? user) async {
@@ -220,7 +164,6 @@ void _scrollToBottom() {
           if (_userModel != null) {
             _userVipSubscription = await AdminController().getUserVipSubscription(_userModel!.uid);
             if (_userVipSubscription != null) {
-              _userVipPlan = await AdminController().getVipPlanById(_userVipSubscription!.planoId);
             }
           }
           if (mounted) {
@@ -230,7 +173,6 @@ void _scrollToBottom() {
           print('Error getting current user: $e');
           _userModel = null;
           _userVipSubscription = null;
-          _userVipPlan = null;
           if (mounted) {
             setState(() {});
           }
@@ -238,7 +180,6 @@ void _scrollToBottom() {
       } else {
         _userModel = null;
         _userVipSubscription = null;
-        _userVipPlan = null;
         if (mounted) {
           setState(() {});
         }
@@ -285,7 +226,7 @@ Future<void> _logout() async {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D0D0D),
@@ -297,7 +238,7 @@ Future<void> _logout() async {
               height: 48,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.1),
@@ -319,12 +260,7 @@ Future<void> _logout() async {
             ),
           ],
         ),
-        leading: MediaQuery.of(context).size.width <= 600
-            ? IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-              )
-            : null,
+leading: null,
         actions: [
           if (MediaQuery.of(context).size.width > 600) ...[
            // TextButton(onPressed: () => _scrollToSection(_heroKey), child: const Text('Início', style: TextStyle(color: Colors.white))),
@@ -342,7 +278,7 @@ Future<void> _logout() async {
                 child: ElevatedButton(
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginPage())),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
+                    backgroundColor: Colors.white,
                     foregroundColor: const Color.fromARGB(255, 172, 15, 15),
                       shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -395,7 +331,7 @@ Future<void> _logout() async {
           ],
         ],
       ),
-      drawer: MediaQuery.of(context).size.width <= 600
+endDrawer: MediaQuery.of(context).size.width <= 600
           ? Drawer(
               backgroundColor: const Color(0xFF0D0D0D),
               child: ListView(
@@ -499,159 +435,454 @@ Container(
       end: Alignment.bottomCenter,
       colors: [
         Colors.black.withOpacity(0.9),
-        Colors.black.withOpacity(0.7),
+        Colors.black.withOpacity(0.85),
       ],
     ),
         ),
       ),
 
       // Conteúdo
-      Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 900),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (_userModel != null) ...[
-                  Text(
-                    'Olá, ${_userModel!.name}',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: MediaQuery.of(context).size.width > 600 ? 20 : 16,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-
-                Text(
-                  _settings?.descricaoCurta ?? 'Excelência em cada corte',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: MediaQuery.of(context).size.width > 600 ? 52 : 34,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                Text(
-                  _settings?.subDescricao ??
-                      'Estilo, precisão e profissionalismo num só lugar.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: MediaQuery.of(context).size.width > 600 ? 22 : 18,
-                    color: Colors.white70,
-                    height: 1.4,
-                  ),
-                ),
-
-                const SizedBox(height: 28),
-
-                // Estado aberto / fechado
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.circle,
-                      size: 12,
-                      color: _isBarbershopOpen ? Colors.greenAccent : Colors.redAccent,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _isBarbershopOpen ? 'Aberto agora' : 'Fechado no momento',
-                      style: TextStyle(
-                        color: _isBarbershopOpen ? Colors.greenAccent : Colors.redAccent,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 28),
-
-                // CTA principal (Agendar Agora - abre BookingPage com 1ª barbearia ativa)
-                AnimatedBuilder(
-                  animation: _animationController,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _scaleAnimation.value,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const BookingPage(),
+      LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth > 600;
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1100),
+                child: isDesktop
+                    ? Row(
+                     mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Lado esquerdo (texto e CTAs maiores e mais alinhados)
+                          Expanded(
+                            flex: 4,
+                            child: Transform.translate(
+                              offset: const Offset(-100, 0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                if (_userModel != null) ...[
+                                  Text(
+                                    'Olá, ${_userModel!.name}',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                ],
+                                Text(
+                                  _settings?.descricaoCurta ?? 'Excelência em cada corte',
+                                  textAlign: TextAlign.left,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  _settings?.subDescricao ??
+                                      'Estilo, precisão e profissionalismo num só lugar.',
+                                  textAlign: TextAlign.left,
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: MediaQuery.of(context).size.width > 900 ? 12 : 11,
+                                    color: Colors.white70,
+                                    height: 1.3,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.circle,
+                                      size: 9,
+                                      color: _isBarbershopOpen
+                                          ? Colors.greenAccent
+                                          : Colors.redAccent,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      _isBarbershopOpen
+                                          ? 'Aberto agora'
+                                          : 'Fechado no momento',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: _isBarbershopOpen
+                                            ? Colors.greenAccent
+                                            : Colors.redAccent,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 14),
+                                AnimatedBuilder(
+                                  animation: _animationController,
+                                  builder: (context, child) {
+                                    return Transform.scale(
+                                      scale: _scaleAnimation.value,
+                                      child: SizedBox(
+                                        height: 40,
+                                        
+                                        child: SizedBox(
+                                          width: 220,
+                                          child: ElevatedButton(
+                                            onPressed: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) => const BookingPage(),
+                                                ),
+                                              );
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(0xFFB22222),
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 20,
+                                                vertical: 12,
+                                              ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              elevation: 8,
+                                            ),
+                                            child: const Text(
+                                              'Agendar Agora',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                                letterSpacing: 0.3,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 10),
+                                SizedBox(
+                                  height: 40,
+                                  width: 260,
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const PortfolioWorksPage(),
+                                        ),
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.black,
+                                      side: const BorderSide(color: Colors.red, width: 2),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 18,
+                                        vertical: 10,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      elevation: 8,
+                                    ),
+                                    child: const Text(
+                                      'Nossos Trabalhos',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFB22222),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 40,
-                            vertical: 14,
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4),
                           ),
-                          elevation: 10,
+                          const SizedBox(width: 20),
+
+                          // Lado direito (imagem com borda vermelha grande)
+                          Expanded(
+                            flex: 10,
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Container(
+                                width: constraints.maxWidth * 0.45,
+                                height: constraints.maxWidth * 0.45,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: const Color.fromARGB(255, 225, 50, 50),
+                                    width: 12,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.35),
+                                      blurRadius: 18,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
+                                ),
+                                child: Container(
+                                  width: constraints.maxWidth * 0.40,
+                                  height: constraints.maxWidth * 0.40,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: const Color.fromARGB(255, 204, 40, 40),
+                                      width: 12,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.35),
+                                        blurRadius: 18,
+                                        offset: const Offset(0, 10),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Container(
+                                    width: constraints.maxWidth * 0.30,
+                                    height: constraints.maxWidth * 0.30,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: const Color(0xFFB22222),
+                                        width: 12,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.35),
+                                          blurRadius: 18,
+                                          offset: const Offset(0, 10),
+                                        ),
+                                      ],
+                                    ),
+                                    padding: const EdgeInsets.all(6),
+                                    child: ClipOval(
+                                      child: Image.asset(
+                                        'assets/images/falcao.jpg',
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        // Imagem em formato circular também na visão mobile
+                        Center(
+                          child: Container(
+                             width: 270,
+                            height: 270,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Color.fromARGB(255, 225, 50, 50),
+                                  width: 20,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 30,
+                                    offset: const Offset(0, 15),
+                                  ),
+                                ],
+                              ),
+                            child: Container(
+                               width: 260,
+                              height: 260,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: const Color.fromARGB(255, 200, 59, 59),
+                                    width: 12,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.10),
+                                      blurRadius: 30,
+                                      offset: const Offset(0, 15),
+                                    ),
+                                  ],
+                                ),
+                              child: Container(
+                                width: 250,
+                                height: 250,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color:   const Color(0xFFB22222),
+                                    width: 12,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.35),
+                                      blurRadius: 30,
+                                      offset: const Offset(0, 15),
+                                    ),
+                                  ],
+                                ),
+                                padding: const EdgeInsets.all(0),
+                                child: ClipOval(
+                                  child: Image.asset(
+                                    'assets/images/falcao.jpg',
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                        child: const Text(
-                          'Agendar Agora',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
+                        const SizedBox(height: 80),
+                        if (_userModel != null) ...[
+                          Text(
+                            'Olá, ${_userModel!.name}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                        ],
+                        Text(
+                          _settings?.descricaoCurta ?? 'Excelência em cada corte',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
                           ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 12),
-
-                // Ver Nossos Trabalhos
-              ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const PortfolioWorksPage(),
-                      ),
-                    );
-                  },
-
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    side: const BorderSide(color: Colors.red, width: 2),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 16,
+                        const SizedBox(height: 8),
+                        Text(
+                          _settings?.subDescricao ??
+                              'Estilo, precisão e profissionalismo num só lugar.',
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.white70,
+                            height: 1.3,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.circle,
+                              size: 9,
+                              color: _isBarbershopOpen
+                                  ? Colors.greenAccent
+                                  : Colors.redAccent,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _isBarbershopOpen
+                                  ? 'Aberto agora'
+                                  : 'Fechado no momento',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _isBarbershopOpen
+                                    ? Colors.greenAccent
+                                    : Colors.redAccent,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 40,
+                          width: 180,
+                          child: AnimatedBuilder(
+                            animation: _animationController,
+                            builder: (context, child) {
+                              return Transform.scale(
+                                scale: _scaleAnimation.value,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const BookingPage(),
+                                      ),
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFB22222),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Agendar Agora',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          height: 40,
+                          width: 200,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const PortfolioWorksPage(),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              side: const BorderSide(color: Colors.red, width: 2),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                            child: const Text(
+                              'Nossos Trabalhos',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    elevation: 10,
-                  ),
-                  child: const Text(
-                    'Nossos Trabalhos',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ],
+                                              ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
+
 
       // FloatingActionButton dentro do hero (canto direito, mais para cima)
       Positioned(
