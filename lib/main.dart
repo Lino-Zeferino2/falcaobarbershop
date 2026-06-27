@@ -6,6 +6,7 @@ import 'package:falcaobarbershopv2/user/pages/anonymous_appointments_page.dart';
 import 'package:falcaobarbershopv2/user/pages/history_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'firebase_options.dart';
 
 
@@ -44,6 +45,7 @@ class MyApp extends StatelessWidget {
       showPerformanceOverlay: false,
       title: 'Falcão',
       theme: ThemeData(
+        fontFamily: GoogleFonts.inter().fontFamily,
         colorScheme: const ColorScheme(
           brightness: Brightness.dark,
           primary: Color(0xFFFF0000), // Red

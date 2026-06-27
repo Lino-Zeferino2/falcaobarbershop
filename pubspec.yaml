@@ -46,6 +46,7 @@ dependencies:
   cloud_functions: ^6.3.3
   intl: ^0.20.3
   video_player: ^2.11.1
+  google_fonts: ^8.1.0
 
 dev_dependencies:
   flutter_test:
