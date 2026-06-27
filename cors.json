@@ -1,0 +1,7 @@
+[
+  {
+    "origin": ["http://localhost:56679", "http://localhost:51700/", "http://localhost:62524", "https://falcaobarbershopv2.web.app", "https://falcaobarbershopv2.firebaseapp.com"],
+    "method": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+    "maxAgeSeconds": 3600
+  }
+]
