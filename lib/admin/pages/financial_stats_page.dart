@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -6,9 +8,9 @@ import '../model/financial_stats_model.dart';
 import '../widgets/stats_filters_widget.dart';
 import '../widgets/stats_cards_widget.dart';
 import '../widgets/charts_section_widget.dart';
-
+import 'dart:html' as html show Blob, Url;
 // Conditional import for web
-import 'dart:html' as html show Blob, Url, AnchorElement;
+
 
 class FinancialStatsPage extends StatefulWidget {
   const FinancialStatsPage({super.key});
@@ -109,14 +111,7 @@ class _FinancialStatsPageState extends State<FinancialStatsPage> {
         final blob = html.Blob([bytes]);
         final url = html.Url.createObjectUrlFromBlob(blob);
 
-        // Generate filename with filter info
-        final viewMode = _currentFilter.viewMode == ViewMode.real ? 'reais' : 'estimados';
-        final period = _currentFilter.getPeriodLabel().toLowerCase().replaceAll(' ', '_');
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-
-        final anchor = html.AnchorElement(href: url)
-          ..setAttribute('download', 'relatorio_financeiro_${viewMode}_${period}_$timestamp.csv')
-          ..click();
+      
         html.Url.revokeObjectUrl(url);
 
         ScaffoldMessenger.of(context).showSnackBar(

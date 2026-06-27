@@ -1,3 +1,5 @@
+// ignore_for_file: use_rethrow_when_possible
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -12,7 +14,6 @@ class AuthController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = firestore;
   final StreamController<UserModel?> _userController = StreamController<UserModel?>.broadcast();
-  UserModel? _currentUser;
   StreamSubscription<User?>? _authSubscription;
 
   // Armazenar credenciais do admin para relogin após criação de profissional
@@ -500,8 +501,8 @@ class AuthController {
         // Sort by dataSubscricao descending to get the most recent
         final sortedDocs = query.docs
           ..sort((a, b) {
-            final aData = a.data() as Map<String, dynamic>;
-            final bData = b.data() as Map<String, dynamic>;
+            final aData = a.data();
+            final bData = b.data();
             final aDate = (aData['dataSubscricao'] as Timestamp).toDate();
             final bDate = (bData['dataSubscricao'] as Timestamp).toDate();
             return bDate.compareTo(aDate); // Descending order

@@ -1,4 +1,6 @@
 
+// ignore_for_file: unused_local_variable, unused_element
+
 import 'package:falcaobarbershopv2/user/widgets/professional_card.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -42,7 +44,6 @@ class _BookingPageState extends State<BookingPage> with TickerProviderStateMixin
   bool _passwordVisible = false;
   bool _confirmPasswordVisible = false;
   bool _usePoints = false;
-  double _discount = 0.0;
   bool _showAllServices = false;
 
   bool _isCompletingBooking = false;

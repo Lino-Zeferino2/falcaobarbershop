@@ -1,6 +1,7 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../controller/auth_controller.dart';
 import '../../admin/model/vip_subscription_model.dart';
 import '../../admin/model/vip_plan_model.dart';
 import '../../admin/controller/admin_controller.dart';

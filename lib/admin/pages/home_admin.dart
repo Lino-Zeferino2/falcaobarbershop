@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously, avoid_types_as_parameter_names, unused_element, duplicate_ignore
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -477,44 +479,6 @@ class _HomeAdminState extends State<HomeAdmin> {
     }
   }
 
-  void _showMobileMenu() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1A1A1A),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ...List.generate(
-                _sections.length,
-                (index) => ListTile(
-                  leading: Icon(_sectionIcons[index], color: Colors.white),
-                  title: Text(_sections[index], style: const TextStyle(color: Colors.white)),
-                  selected: _selectedIndex == index,
-                  selectedTileColor: const Color(0xFFB22222).withOpacity(0.2),
-                  onTap: () {
-                    setState(() => _selectedIndex = index);
-                    Navigator.pop(context);
-                  },
-                ),
-              ),
-              const Divider(color: Colors.white24),
-              ListTile(
-                leading: const Icon(Icons.logout, color: Colors.white),
-                title: const Text('Sair', style: TextStyle(color: Colors.white)),
-                onTap: () {
-                  Navigator.pop(context);
-                  _logout();
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
   Widget _metricCard(String title, String value) {
     return Card(
@@ -1036,9 +1000,6 @@ class _HomeAdminState extends State<HomeAdmin> {
     );
   }
 
-  String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-  }
 
   String _formatTime(DateTime dateTime) {
     return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
@@ -1217,6 +1178,7 @@ class _HomeAdminState extends State<HomeAdmin> {
     if (confirmed == true) {
       try {
         await _adminController.deleteAppointment(appointmentId);
+        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Agendamento deletado com sucesso')),
         );
@@ -1764,7 +1726,7 @@ class _HomeAdminState extends State<HomeAdmin> {
                   style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
                 const SizedBox(height: 8),
-                Container(
+                SizedBox(
                   width: MediaQuery.of(context).size.width - 80,
                   child: DropdownButtonFormField<Map<String, dynamic>>(
                     value: selectedService,

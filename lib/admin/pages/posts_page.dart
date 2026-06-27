@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -154,7 +156,7 @@ class _PostsPageState extends State<PostsPage> {
             ),
             const SizedBox(height: 12),
             if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
-              Container(
+              SizedBox(
                 height: 150,
                 width: double.infinity,
                 child: Image.network(

@@ -18,7 +18,7 @@ class ClientesFilterWidget extends StatefulWidget {
 
 class _ClientesFilterWidgetState extends State<ClientesFilterWidget> {
   final AdminController _adminController = AdminController();
-  String _searchQuery = '';
+  final String _searchQuery = '';
   String? _selectedInactivityRange;
 
   final List<String> _inactivityRanges = ['1+ mês', '2+ meses', '3+ meses'];

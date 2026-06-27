@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import '../controller/admin_controller.dart';
 import '../model/notification_model.dart';
@@ -309,66 +311,4 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
-  Future<void> _showAddNotificationDialog() async {
-    final tituloController = TextEditingController();
-    final mensagemController = TextEditingController();
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Nova Notificação'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: tituloController,
-              decoration: const InputDecoration(
-                labelText: 'Título',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: mensagemController,
-              decoration: const InputDecoration(
-                labelText: 'Mensagem',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (tituloController.text.isNotEmpty && mensagemController.text.isNotEmpty) {
-                Navigator.of(context).pop(true);
-              }
-            },
-            child: const Text('Criar'),
-          ),
-        ],
-      ),
-    );
-
-    if (result == true) {
-      try {
-        await _adminController.addNotification(
-          tituloController.text,
-          mensagemController.text,
-        );
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Notificação criada com sucesso')),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao criar notificação: $e')),
-        );
-      }
-    }
-  }
 }

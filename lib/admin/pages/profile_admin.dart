@@ -1,3 +1,5 @@
+// ignore_for_file: unused_local_variable, no_leading_underscores_for_local_identifiers, use_build_context_synchronously, unused_element, unused_field
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -81,11 +83,6 @@ class _ProfileAdminState extends State<ProfileAdmin> {
         'phone': _phoneController.text,
         'city': _cityController.text,
       });
-
-      // TODO: Update email if changed - requires reauthentication
-      // if (_emailController.text != _adminData!.email) {
-      //   await _auth.currentUser?.updateEmail(_emailController.text);
-      // }
 
       setState(() {
         _isEditing = false;
@@ -509,7 +506,7 @@ class _ProfileAdminState extends State<ProfileAdmin> {
                     const Divider(color: Colors.white24),
                     _buildInfoField('Cidade', _cityController, _isEditing),
                     const Divider(color: Colors.white24),
-                    _buildReadOnlyField('Data de criação', _adminData?.createdAt?.toString().split(' ')[0] ?? 'N/A'),
+                    _buildReadOnlyField('Data de criação', _adminData?.createdAt.toString().split(' ')[0] ?? 'N/A'),
                     const Divider(color: Colors.white24),
                     _buildReadOnlyField('Função', _adminData?.role ?? 'N/A'),
                   ],

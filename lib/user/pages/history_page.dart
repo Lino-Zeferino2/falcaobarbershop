@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -237,7 +239,7 @@ class _HistoryPageState extends State<HistoryPage> {
                       Text(booking['service'], style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                       Text('${DateFormat('dd/MM/yyyy').format(dateTime)} - ${booking['time']}', style: const TextStyle(color: Colors.white70)),
                       Text(booking['professional'], style: const TextStyle(color: Colors.white70)),
-                      Text('${booking['price']?.toStringAsFixed(2) ?? 'N/A'}€', style: const TextStyle(color: const Color(0xFFB22222), fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text('${booking['price']?.toStringAsFixed(2) ?? 'N/A'}€', style: const TextStyle(color:  Color(0xFFB22222), fontSize: 16, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),

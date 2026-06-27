@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -408,11 +410,6 @@ class _ProfissionalDialogState extends State<ProfissionalDialog> {
   // Novos campos para horários por dia
   Map<String, Map<String, dynamic>?> _horariosPorDia = {};
   final List<String> _diasSemana = ['segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado', 'domingo'];
-  final Map<String, TextEditingController> _exceptionDateControllers = {};
-  final Map<String, TextEditingController> _exceptionManhaInicioControllers = {};
-  final Map<String, TextEditingController> _exceptionManhaFimControllers = {};
-  final Map<String, TextEditingController> _exceptionTardeInicioControllers = {};
-  final Map<String, TextEditingController> _exceptionTardeFimControllers = {};
 
   String? _selectedBarbeariaId;
   List<String> _selectedDias = [];

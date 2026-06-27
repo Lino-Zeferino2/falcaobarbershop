@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously, unused_local_variable
+
 import 'package:flutter/material.dart';
 import '../controller/admin_controller.dart';
 import '../model/vip_plan_model.dart';

@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously, empty_catches
+
 import 'dart:convert';
 // Conditional import for web
 // ignore: avoid_web_libraries_in_flutter

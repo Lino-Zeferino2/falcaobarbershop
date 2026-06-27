@@ -1,14 +1,14 @@
+// ignore_for_file: use_build_context_synchronously, unused_element
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../controller/professional_controller.dart';
 import '../../admin/model/appointment_model.dart';
 import '../../admin/model/notification_model.dart';
-import '../../admin/model/barbearia_model.dart';
 import '../../admin/model/profissional_model.dart';
 import '../../admin/model/service_model.dart';
 import '../../user/model/user_model.dart';
-import '../../user/pages/home_user.dart';
 
 class HomeProfessionalPage extends StatefulWidget {
   const HomeProfessionalPage({super.key});
@@ -22,7 +22,6 @@ class _HomeProfessionalPageState extends State<HomeProfessionalPage> {
   int _selectedIndex = 0;
   UserModel? _barberProfile;
   bool _isEditing = false;
-  BarbeariaModel? _barbearia;
   ProfissionalModel? _professionalData;
   String _searchQuery = '';
   String _selectedStatusFilter = 'Todos';
@@ -232,13 +231,13 @@ class _HomeProfessionalPageState extends State<HomeProfessionalPage> {
               CircleAvatar(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 child: Text(
-                  _barberProfile?.name?.substring(0, 1).toUpperCase() ?? 'B',
+                  _barberProfile?.name.substring(0, 1).toUpperCase() ?? 'B',
                   style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
                 ),
               ),
               const SizedBox(width: 12),
               Text(
-                'Olá, ${_barberProfile?.name?.split(' ').first ?? 'Barbeiro'}!',
+                'Olá, ${_barberProfile?.name.split(' ').first ?? 'Barbeiro'}!',
                 style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
               ),
             ],
@@ -278,7 +277,7 @@ class _HomeProfessionalPageState extends State<HomeProfessionalPage> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              'Olá, ${_barberProfile?.name?.split(' ').first ?? 'Barbeiro'}! Pronto para mais um dia de cortes?',
+              'Olá, ${_barberProfile?.name.split(' ').first ?? 'Barbeiro'}! Pronto para mais um dia de cortes?',
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 20,
@@ -684,7 +683,7 @@ class _HomeProfessionalPageState extends State<HomeProfessionalPage> {
                                         style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
                                       ),
                                       Text(
-                                        '${DateFormat('dd/MM/yyyy HH:mm').format(appointment.dateTime)}',
+                                        DateFormat('dd/MM/yyyy HH:mm').format(appointment.dateTime),
                                         style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
                                       ),
                                     ],
@@ -888,7 +887,7 @@ class _HomeProfessionalPageState extends State<HomeProfessionalPage> {
                     if (_isEditing) ...[
                       _buildModernEditableProfileField(
                         'Nome',
-                        _barberProfile!.name ?? '',
+                        _barberProfile!.name,
                         Icons.person,
                         (value) {
                           setState(() {
@@ -899,7 +898,7 @@ class _HomeProfessionalPageState extends State<HomeProfessionalPage> {
                       const SizedBox(height: 16),
                       _buildModernEditableProfileField(
                         'Email',
-                        _barberProfile!.email ?? '',
+                        _barberProfile!.email,
                         Icons.email,
                         (value) {
                           setState(() {
@@ -910,7 +909,7 @@ class _HomeProfessionalPageState extends State<HomeProfessionalPage> {
                       const SizedBox(height: 16),
                       _buildModernEditableProfileField(
                         'Telefone',
-                        _barberProfile!.phone ?? '',
+                        _barberProfile!.phone,
                         Icons.phone,
                         (value) {
                           setState(() {
@@ -964,7 +963,7 @@ class _HomeProfessionalPageState extends State<HomeProfessionalPage> {
                       ),
                     ] else ...[
                       // ignore: dead_code
-                      _buildModernReadOnlyProfileField('Nome', _barberProfile!.name ?? '', Icons.person),
+                      _buildModernReadOnlyProfileField('Nome', _barberProfile!.name, Icons.person),
                       const SizedBox(height: 16),
                       _buildModernReadOnlyProfileField('Email', _barberProfile!.email, Icons.email),
                       const SizedBox(height: 16),
@@ -1605,7 +1604,7 @@ class _HomeProfessionalPageState extends State<HomeProfessionalPage> {
               ],
             ),
             const SizedBox(height: 8),
-            Text('Telefone: ${appointment.clientPhone ?? 'Não informado'}'),
+            Text('Telefone: ${appointment.clientPhone}'),
             const SizedBox(height: 8),
             Text('Status: ${_getStatusText(appointment.status)}'),
             const SizedBox(height: 8),

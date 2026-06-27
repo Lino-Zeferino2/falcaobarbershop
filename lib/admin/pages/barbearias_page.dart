@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import '../controller/admin_controller.dart';
 import '../model/barbearia_model.dart';

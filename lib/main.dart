@@ -1,10 +1,11 @@
 
 
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:falcaobarbershopv2/user/pages/anonymous_appointments_page.dart';
 import 'package:falcaobarbershopv2/user/pages/history_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'firebase_options.dart';
 
 
