@@ -1785,9 +1785,10 @@ class _BookingPageState extends State<BookingPage> with TickerProviderStateMixin
         const SizedBox(height: 10),
         if (_selectedDate != null) ...[
           Text(
-            'Data selecionada: ${DateFormat('dd/MM/yyyy', 'pt_BR').format(_selectedDate!)} - ${_getWeekdayName(_selectedDate!.weekday)}',
+            'Data selecionada: ${DateFormat('dd/MM/yyyy').format(_selectedDate!)} - ${_getWeekdayName(_selectedDate!.weekday)}',
             style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
           ),
+
           const SizedBox(height: 10),
           ElevatedButton(
             onPressed: () {

@@ -7,6 +7,7 @@ import 'package:falcaobarbershopv2/user/pages/history_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import 'firebase_options.dart';
 
 
@@ -24,9 +25,14 @@ void main() async {
 
 
 
-  // intl initialization (evita erro de function não importada em versões/targets diferentes)
-  // ignore: unnecessary_type_check
-  await Future.value();
+  // intl initialization (resolve: "locale data has not been initialized")
+  // Needed for DateFormat('...', 'pt_BR') to work on web and other targets.
+  // NOTE: initializeDateFormatting is available only in some intl versions.
+  // If your build target doesn't support it, this can be removed and the DateFormat
+  // usage should be migrated to DateFormat('...', 'pt_BR').format(...) without relying
+  // on global initialization.
+
+
 
 
   runApp(const MyApp());
