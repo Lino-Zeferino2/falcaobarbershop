@@ -50,21 +50,24 @@ class _BookingPageState extends State<BookingPage> with TickerProviderStateMixin
 
 
   double get _finalPrice {
-    double basePrice = _parsePrice(_selectedService!['preco']!);
-    if (_usePoints && _currentUser != null && _userData != null && _userData!.points >= 100.0) {
-      int discountBlocks = _userData!.points ~/ 100;
-      double discountPercent = discountBlocks * 0.1;
-      return basePrice * (1 - discountPercent);
-    }
-    return basePrice;
+    final basePrice = _parsePrice(_selectedService!['preco']!);
+    if (_currentUser == null || _userData == null) return basePrice;
+
+    // Só permite desconto se o cliente tiver 100 ou mais pontos.
+    if (!_usePoints || _userData!.points < 100.0) return basePrice;
+
+    // Desconto fixo por booking: 10% (1 bloco).
+    return basePrice * 0.9;
   }
+
 
   int get _availableDiscountBlocks {
     if (_currentUser != null && _userData != null && _userData!.points >= 100.0) {
-      return 1; // Limit to 1 block (10% discount) per booking
+      return 1; // 1 bloco = 10% por agendamento
     }
     return 0;
   }
+
 
   User? _currentUser;
   UserModel? _userData;
@@ -170,66 +173,43 @@ class _BookingPageState extends State<BookingPage> with TickerProviderStateMixin
     }
   }
 
-  Future<void> _loadBookedTimes() async {
-    if (_selectedProfessional != null && _selectedDate != null) {
-      try {
-        String dateString =
-            '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
-
-        // 1) Agendamentos do banco falcaobarbershop (instância firestore)
-        final QuerySnapshot snapshotFalca = await firestore
-            .collection('agendamentos')
-            .where('professional', isEqualTo: _selectedProfessional!.userId)
-            .where('date', isEqualTo: dateString)
-            .where('status', whereIn: ['pending', 'confirmed'])
-            .get();
-
-        // 2) Agendamentos (somente Firebase default)
-        final QuerySnapshot snapshotDefault = await firestore
-            .collection('agendamentos')
-            .where('professional', isEqualTo: _selectedProfessional!.userId)
-            .where('date', isEqualTo: dateString)
-            .where('status', whereIn: ['pending', 'confirmed'])
-            .get();
-
-        final falcaBooked = snapshotFalca.docs.map((doc) {
-          String timeStr = doc['time'];
-          List<String> parts = timeStr.split(':');
-          final start = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
-          final int duration = (doc['duracao'] ?? 0);
-          final int intervalo = (doc['intervalo'] ?? 0);
-          final int endTotalMinutes = start.hour * 60 + start.minute + duration + intervalo;
-          final end = TimeOfDay(hour: endTotalMinutes ~/ 60, minute: endTotalMinutes % 60);
-          return {'start': start, 'end': end};
-        }).toList();
-
-        final defaultBooked = snapshotDefault.docs.map((doc) {
-          String timeStr = doc['time'];
-          List<String> parts = timeStr.split(':');
-          final start = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
-          final int duration = (doc['duracao'] ?? 0);
-          final int intervalo = (doc['intervalo'] ?? 0);
-          final int endTotalMinutes = start.hour * 60 + start.minute + duration + intervalo;
-          final end = TimeOfDay(hour: endTotalMinutes ~/ 60, minute: endTotalMinutes % 60);
-          return {'start': start, 'end': end};
-        }).toList();
-
-        _bookedTimes = [...falcaBooked, ...defaultBooked];
-
-        debugPrint(
-          'Loaded ${_bookedTimes.length} booked times (falcaobarbershop + default) for ${_selectedProfessional!.name} on $dateString',
-        );
-
-        if (mounted) setState(() {});
-      } catch (e) {
-        debugPrint('Error loading booked times: $e');
-      }
-    } else {
-      _bookedTimes = [];
-      if (mounted) setState(() {});
-    }
+ Future<void> _loadBookedTimes() async {
+  if (_selectedProfessional == null || _selectedDate == null) {
+    _bookedTimes = [];
+    if (mounted) setState(() {});
+    return;
   }
 
+  try {
+    final String dateString =
+        '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
+
+    final QuerySnapshot snapshot = await firestore
+        .collection('agendamentos')
+        .where('professional', isEqualTo: _selectedProfessional!.userId)
+        .where('date', isEqualTo: dateString)
+        .where('status', whereIn: ['pending', 'confirmed'])
+        .get();
+
+    _bookedTimes = snapshot.docs.map((doc) {
+      final String timeStr = doc['time'];
+      final List<String> parts = timeStr.split(':');
+      final start = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      final int duration = (doc['duracao'] ?? 0) as int;
+      final int intervalo = (doc['intervalo'] ?? 0) as int;
+      final int endTotal = start.hour * 60 + start.minute + duration + intervalo;
+      return {
+        'start': start,
+        'end': TimeOfDay(hour: endTotal ~/ 60, minute: endTotal % 60),
+      };
+    }).toList();
+
+    debugPrint('Booked times loaded: ${_bookedTimes.length}');
+    if (mounted) setState(() {});
+  } catch (e) {
+    debugPrint('Error loading booked times: $e');
+  }
+}
   bool _isDayAvailable(DateTime day) {
     if (_selectedProfessional == null) {
       return day.weekday != DateTime.sunday; // Fallback: no Sundays
@@ -803,7 +783,8 @@ class _BookingPageState extends State<BookingPage> with TickerProviderStateMixin
             'date': Timestamp.now(),
           });
 
-          if (_usePoints) {
+          // Só desconta pontos se realmente foi aplicado desconto (>= 100 pontos)
+          if (_usePoints && _userData != null && _userData!.points >= 100.0) {
             double pointsToSubtract = _availableDiscountBlocks * 100.0;
             await firestore.collection('clientes').doc(_currentUser!.uid).update({
               'points': FieldValue.increment(-pointsToSubtract),
@@ -943,10 +924,44 @@ class _BookingPageState extends State<BookingPage> with TickerProviderStateMixin
     );
   }
 
-  void _showSummaryDialog() {
-    final String formattedTime = '${_selectedTime!.hour}:${_selectedTime!.minute.toString().padLeft(2, '0')}';
+void _showSummaryDialog() async {
+  // Refresca booked times imediatamente antes de mostrar o resumo
+  await _loadBookedTimes();
 
+  // Verifica se o slot ainda está disponível
+  final available = _getAvailableTimes();
+  if (_selectedTime != null && !available.contains(_selectedTime)) {
+    if (!mounted) return;
     showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF0D0D0D),
+        title: const Text('Horário Indisponível',
+            style: TextStyle(color: Colors.white)),
+        content: const Text(
+            'O horário que selecionaste já foi reservado. Por favor escolhe outro.',
+            style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              setState(() {
+                _selectedTime = null;
+                _currentStep = 3;
+              });
+            },
+            child: const Text('OK', style: TextStyle(color: Color(0xFFB22222))),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+   final String formattedTime = '${_selectedTime!.hour}:${_selectedTime!.minute.toString().padLeft(2, '0')}';
+
+  // Só então mostra o resumo
+  // ... resto do código actual
+     showDialog(
       context: context,
       builder: (context) {
         return StatefulBuilder(
@@ -1118,7 +1133,11 @@ class _BookingPageState extends State<BookingPage> with TickerProviderStateMixin
         );
       },
     );
-  }
+ 
+}
+
+
+
 
   void _showTermsDialog() {
     showDialog(
