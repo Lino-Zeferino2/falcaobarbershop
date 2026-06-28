@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import '../../admin/controller/admin_controller.dart';
 import '../../admin/model/post_model.dart';
 import '../../admin/model/settings_model.dart';
+import 'booking_page.dart';
 
 class PortfolioWorksPage extends StatefulWidget {
   const PortfolioWorksPage({super.key});
@@ -50,9 +51,6 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
     'limpeza-facial.mp4',
   ];
 
-  // IMPORTANTE (Web): seus mp4 precisam existir em um caminho público acessível.
-  // Ex.: colocar os arquivos em `web/videos/` para servir como `/videos/<arquivo>.mp4`.
-  String _webPublicUrl(String slug) => '/videos/$slug';
 
 
   Future<SettingsModel?> _loadSettings() => AdminController().getSettings();
@@ -84,75 +82,79 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
         .replaceFirstMapped(RegExp(r'^(.)'), (m) => m.group(1)!.toUpperCase());
   }
 
-  Widget _videoCard(String assetPath, {String? webUrl, required int index}) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF161616),
-          border: Border.all(color: const Color(0xFFB22222).withOpacity(0.35)),
-        ),
-        child: AspectRatio(
-          aspectRatio: 16 / 9,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              _LocalVideoPlayer(
-                assetPath: assetPath,
-                webUrl: webUrl,
-                isPlaying: _videoIsPlaying[index],
-                onPlayerReady: () {},
-              ),
-              const Positioned(
-                left: 16,
-                top: 16,
-                child: Chip(
-                  backgroundColor: Color(0xFFB22222),
-                  labelStyle: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  avatar: Icon(Icons.play_arrow, color: Colors.white),
-                  label: Text('Vídeo'),
-                ),
-              ),
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.05),
-                        Colors.black.withOpacity(0.45),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(14),
-                child: Align(
-                  alignment: Alignment.bottomLeft,
-                  child: Text(
-                    _prettyVideoTitle(assetPath),
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.92),
-                      fontWeight: FontWeight.w700,
-                      fontSize: MediaQuery.of(context).size.width > 600 ? 16 : 14,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withOpacity(0.7),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        )
-                      ],
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              )
-            ],
+  Widget _videoCard(String assetPath, {required int index}) {
+    return GestureDetector(
+      onTap: () => _openVideoFullscreen(
+  context, 
+  assetPath, 
+  _prettyVideoTitle(assetPath),  // ← passa o título aqui
+),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF161616),
+            border: Border.all(color: const Color(0xFFB22222).withOpacity(0.35)),
           ),
-        ),
+          child:Stack(
+        fit: StackFit.expand,
+        children: [
+                _LocalVideoPlayer(
+                  assetPath: assetPath,
+                  isPlaying: _videoIsPlaying[index],
+                  onPlayerReady: () {},
+                ),
+                const Positioned(
+                  left: 16,
+                  top: 16,
+                  child: Chip(
+                    backgroundColor: Color(0xFFB22222),
+                    labelStyle: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    avatar: Icon(Icons.play_arrow, color: Colors.white),
+                    label: Text('Vídeo'),
+                  ),
+                ),
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.05),
+                          Colors.black.withOpacity(0.45),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Align(
+                    alignment: Alignment.bottomLeft,
+                    child: Text(
+                      _prettyVideoTitle(assetPath),
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.92),
+                        fontWeight: FontWeight.w700,
+                        fontSize: MediaQuery.of(context).size.width > 600 ? 16 : 14,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.7),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          )
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+              ],
+            ),
+          ),
+        
       ),
     );
   }
@@ -280,29 +282,30 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
                         style: TextStyle(color: Colors.white70, fontSize: 14),
                       ),
                       const SizedBox(height: 14),
-                      LayoutBuilder(
+                          LayoutBuilder(
                         builder: (context, constraints) {
                           final isDesktop = constraints.maxWidth > 900;
+                          // Cards mais largos/altos: menos colunas
                           final crossAxisCount = isDesktop ? 3 : 2;
 
-                          return GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _videoSlugs.length,
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: crossAxisCount,
-                              crossAxisSpacing: 14,
-                              mainAxisSpacing: 14,
-                              childAspectRatio: isDesktop ? 1.6 : 1.2,
-                            ),
+                          return  GridView.builder(
+  shrinkWrap: true,
+  physics: const NeverScrollableScrollPhysics(),
+  itemCount: _videoSlugs.length,
+  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+    crossAxisCount: crossAxisCount,
+    crossAxisSpacing: 12,
+    mainAxisSpacing: 12,
+    childAspectRatio: isDesktop ? 1.4 : 0.55,
+  ),
                             itemBuilder: (context, index) {
                               final slug = _videoSlugs[index];
-                              final assetPath = 'assets/videos/$slug';
-                              final webUrl = _webPublicUrl(slug);
+                              final assetPath = kIsWeb 
+    ? 'videos/$slug'  // path relativo na pasta web/
+    : 'assets/videos/$slug';  // path local para mobile
 
                               return _videoCard(
                                 assetPath,
-                                webUrl: webUrl,
                                 index: index,
                               );
                             },
@@ -360,6 +363,7 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
                           return LayoutBuilder(
                             builder: (context, constraints) {
                               final isDesktop = constraints.maxWidth > 900;
+                              // Fotos mais amplas e menos colunas
                               final crossAxisCount = isDesktop ? 3 : 2;
 
                               return GridView.builder(
@@ -367,11 +371,11 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
                                 physics: const NeverScrollableScrollPhysics(),
                                 itemCount: posts.length,
                                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: crossAxisCount,
-                                  crossAxisSpacing: 14,
-                                  mainAxisSpacing: 14,
-                                  childAspectRatio: 1,
-                                ),
+    crossAxisCount: crossAxisCount,
+    crossAxisSpacing: 12,
+    mainAxisSpacing: 12,
+    childAspectRatio: isDesktop ? 1.4 : 0.55,
+  ),
                                 itemBuilder: (context, index) {
                                   final post = posts[index];
                                   final url = post.imageUrl;
@@ -457,6 +461,31 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
                           textAlign: TextAlign.center,
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      Center(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const BookingPage(
+                                  selectedService: null,
+                                  selectedBarbearia: null,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.calendar_month_outlined),
+                          label: const Text('Agendar'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFB22222),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 16),
                     ],
                   ),
@@ -472,13 +501,11 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
 
 class _LocalVideoPlayer extends StatefulWidget {
   final String assetPath;
-  final String? webUrl;
   final ValueListenable<bool> isPlaying;
   final VoidCallback onPlayerReady;
 
   const _LocalVideoPlayer({
     required this.assetPath,
-    this.webUrl,
     required this.isPlaying,
     required this.onPlayerReady,
   });
@@ -495,18 +522,7 @@ class _LocalVideoPlayerState extends State<_LocalVideoPlayer> {
   void initState() {
     super.initState();
 
-    if (kIsWeb) {
-      if (widget.webUrl == null || widget.webUrl!.isEmpty) {
-        debugPrint('[VideoPlayer] webUrl ausente para ${widget.assetPath}');
-        setState(() => _ready = false);
-        return;
-      }
-      _controller = VideoPlayerController.network(widget.webUrl!);
-    } else {
-      _controller = VideoPlayerController.asset(widget.assetPath);
-    }
-
-    _controller!
+    _controller =  VideoPlayerController.networkUrl(Uri.parse(widget.assetPath))
       ..setLooping(true)
       ..setVolume(0);
 
@@ -526,7 +542,6 @@ class _LocalVideoPlayerState extends State<_LocalVideoPlayer> {
       setState(() => _ready = true);
       widget.onPlayerReady();
 
-      // aplica o estado inicial
       _syncPlayback();
     }).catchError((e) {
       if (!mounted) return;
@@ -555,38 +570,166 @@ class _LocalVideoPlayerState extends State<_LocalVideoPlayer> {
     super.dispose();
   }
 
+
+@override
+Widget build(BuildContext context) {
+  if (!_ready) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFB22222),
+            Color(0xFF0D0D0D),
+          ],
+        ),
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.videocam_rounded,
+          size: 56,
+          color: Colors.white70,
+        ),
+      ),
+    );
+  }
+
+  return ClipRect(
+    child: OverflowBox(
+      maxWidth: double.infinity,
+      maxHeight: double.infinity,
+      child: FittedBox(
+        fit: BoxFit.none,
+        child: SizedBox(
+          width: _controller!.value.size.width,
+          height: _controller!.value.size.height,
+          child: VideoPlayer(_controller!),
+        ),
+      ),
+    ),
+  );
+}
+
+
+
+
+
+
+}
+void _openVideoFullscreen(BuildContext context, String assetPath, String title)  {
+  showDialog(
+    context: context,
+    barrierColor: Colors.black.withOpacity(0.95),
+    builder: (context) => Dialog.fullscreen(
+      backgroundColor: Colors.black,
+      child: Stack(
+        children: [
+          Center(
+            child: _FullscreenVideoPlayer(assetPath: assetPath),
+          ),
+          Positioned(
+            top: 40,
+            right: 16,
+            child: IconButton(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.close, color: Colors.white, size: 32),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.black54,
+                shape: const CircleBorder(),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 40,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+class _FullscreenVideoPlayer extends StatefulWidget {
+  final String assetPath;
+  const _FullscreenVideoPlayer({required this.assetPath});
+
+  @override
+  State<_FullscreenVideoPlayer> createState() => _FullscreenVideoPlayerState();
+}
+
+class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer> {
+  late VideoPlayerController _controller;
+  bool _ready = false;
+  bool _playing = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.assetPath))
+      ..setLooping(true)
+      ..setVolume(1.0);
+
+    _controller.initialize().then((_) {
+      if (!mounted) return;
+      setState(() => _ready = true);
+      _controller.play();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _togglePlay() {
+    setState(() {
+      _playing = !_playing;
+      _playing ? _controller.play() : _controller.pause();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_ready) {
-      return Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFB22222),
-              Color(0xFF0D0D0D),
-            ],
-          ),
-        ),
-        child: const Center(
-          child: Icon(
-            Icons.videocam_rounded,
-            size: 56,
-            color: Colors.white70,
-          ),
-        ),
-      );
+      return const CircularProgressIndicator(color: Colors.white);
     }
 
-    return SizedBox.expand(
-      child: FittedBox(
-        fit: BoxFit.cover,
-        child: VideoPlayer(_controller!),
+    return GestureDetector(
+      onTap: _togglePlay,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          AspectRatio(
+            aspectRatio: _controller.value.aspectRatio,
+            child: VideoPlayer(_controller),
+          ),
+          AnimatedOpacity(
+            opacity: _playing ? 0.0 : 1.0,
+            duration: const Duration(milliseconds: 200),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              padding: const EdgeInsets.all(16),
+              child: const Icon(Icons.play_arrow, color: Colors.white, size: 48),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
-
-
 
