@@ -245,6 +245,8 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    // debug: força o refresh visual para confirmar render
+
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D0D),
@@ -350,6 +352,11 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
                             );
                           }
                           final posts = snapshot.data ?? [];
+                          debugPrint('[PortfolioWorksPage] hasError=${snapshot.hasError}');
+                          debugPrint('[PortfolioWorksPage] postsCount=${posts.length}');
+                          if (posts.isNotEmpty) {
+                            debugPrint('[PortfolioWorksPage] first.imageUrl=${posts.first.imageUrl}');
+                          }
                           if (posts.isEmpty) {
                             return const Padding(
                               padding: EdgeInsets.symmetric(vertical: 30),
@@ -359,6 +366,7 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
                               ),
                             );
                           }
+
 
                           return LayoutBuilder(
                             builder: (context, constraints) {
@@ -414,6 +422,7 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
                                                     );
                                                   },
                                                   errorBuilder: (context, error, stackTrace) {
+                                                    debugPrint('[PortfolioWorksPage] Image.network error: url=$url error=$error');
                                                     return const Center(
                                                       child: Icon(
                                                         Icons.broken_image_outlined,
@@ -422,6 +431,9 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
                                                     );
                                                   },
                                                 ),
+
+
+
                                                 Positioned.fill(
                                                   child: DecoratedBox(
                                                     decoration: BoxDecoration(
