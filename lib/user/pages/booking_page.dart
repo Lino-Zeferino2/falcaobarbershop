@@ -1,5 +1,5 @@
 
-// ignore_for_file: unused_local_variable, unused_element
+// ignore_for_file: unused_local_variable, unused_element, use_build_context_synchronously
 
 import 'package:falcaobarbershopv2/user/widgets/professional_card.dart';
 import 'package:flutter/gestures.dart';
@@ -925,10 +925,7 @@ class _BookingPageState extends State<BookingPage> with TickerProviderStateMixin
   }
 
 void _showSummaryDialog() async {
-  // Refresca booked times imediatamente antes de mostrar o resumo
   await _loadBookedTimes();
-
-  // Verifica se o slot ainda está disponível
   final available = _getAvailableTimes();
   if (_selectedTime != null && !available.contains(_selectedTime)) {
     if (!mounted) return;
@@ -936,20 +933,11 @@ void _showSummaryDialog() async {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF0D0D0D),
-        title: const Text('Horário Indisponível',
-            style: TextStyle(color: Colors.white)),
-        content: const Text(
-            'O horário que selecionaste já foi reservado. Por favor escolhe outro.',
-            style: TextStyle(color: Colors.white70)),
+        title: const Text('Horário indisponível', style: TextStyle(color: Colors.white)),
+        content: const Text('O horário foi reservado entretanto. Escolhe outro.', style: TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              setState(() {
-                _selectedTime = null;
-                _currentStep = 3;
-              });
-            },
+            onPressed: () { Navigator.of(context).pop(); setState(() { _selectedTime = null; _currentStep = 3; }); },
             child: const Text('OK', style: TextStyle(color: Color(0xFFB22222))),
           ),
         ],
@@ -957,183 +945,182 @@ void _showSummaryDialog() async {
     );
     return;
   }
-   final String formattedTime = '${_selectedTime!.hour}:${_selectedTime!.minute.toString().padLeft(2, '0')}';
 
-  // Só então mostra o resumo
-  // ... resto do código actual
-     showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return AlertDialog(
-              backgroundColor: const Color(0xFF0D0D0D),
-              title: const Text(
-                'Resumo do Agendamento',
-                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Confirme os detalhes do seu agendamento:',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                    const SizedBox(height: 20),
-                    Card(
-                      color: const Color(0xFF1A1A1A),
-                      margin: const EdgeInsets.symmetric(vertical: 5),
-                      child: ListTile(
-                        leading: const Icon(Icons.content_cut, color: Color(0xFFB22222)),
-                        title: const Text('Serviço', style: TextStyle(color: Colors.white, fontSize: 14)),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${_selectedService!['nome']!} - ${_selectedService!['duracao']}',
-                              style: const TextStyle(color: Colors.white70, fontSize: 16),
-                            ),
-                            const SizedBox(height: 4),
-                            if (_usePoints && _currentUser != null && _userData != null && _userData!.points >= 100.0)
-                              Text(
-                                'Preço: €${_parsePrice(_selectedService!['preco']!).toStringAsFixed(2)} → €${_finalPrice.toStringAsFixed(2)} (Desconto aplicado)',
-                                style: const TextStyle(color: Colors.green, fontSize: 14, fontWeight: FontWeight.bold),
-                              )
-                            else
-                              Text('Preço: €${_finalPrice.toStringAsFixed(2)}',
-                                  style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Card(
-                      color: const Color(0xFF1A1A1A),
-                      margin: const EdgeInsets.symmetric(vertical: 5),
-                      child: ListTile(
-                        leading: const Icon(Icons.person, color: Color(0xFFB22222)),
-                        title: const Text('Profissional', style: TextStyle(color: Colors.white, fontSize: 14)),
-                        subtitle: Text(_selectedProfessional!.name, style: const TextStyle(color: Colors.white70, fontSize: 16)),
-                      ),
-                    ),
-                    Card(
-                      color: const Color(0xFF1A1A1A),
-                      margin: const EdgeInsets.symmetric(vertical: 5),
-                      child: ListTile(
-                        leading: const Icon(Icons.calendar_today, color: Color(0xFFB22222)),
-                        title: const Text('Data', style: TextStyle(color: Colors.white, fontSize: 14)),
-                        subtitle: Text(
-                          '${_selectedDate?.toLocal().toString().split(' ')[0]} - ${_getWeekdayName(_selectedDate!.weekday)}',
-                          style: const TextStyle(color: Colors.white70, fontSize: 16),
-                        ),
-                      ),
-                    ),
-                    Card(
-                      color: const Color(0xFF1A1A1A),
-                      margin: const EdgeInsets.symmetric(vertical: 5),
-                      child: ListTile(
-                        leading: const Icon(Icons.access_time, color: Color(0xFFB22222)),
-                        title: const Text('Hora', style: TextStyle(color: Colors.white, fontSize: 14)),
-                        subtitle: Text(formattedTime, style: const TextStyle(color: Colors.white70, fontSize: 16)),
-                      ),
-                    ),
-                    Card(
-                      color: const Color(0xFF1A1A1A),
-                      margin: const EdgeInsets.symmetric(vertical: 5),
-                      child: ListTile(
-                        leading: const Icon(Icons.location_on, color: Color(0xFFB22222)),
-                        title: const Text('Barbearia', style: TextStyle(color: Colors.white, fontSize: 14)),
-                        subtitle: Text(_selectedBarbearia!.name, style: const TextStyle(color: Colors.white70, fontSize: 16)),
-                      ),
-                    ),
-                    Card(
-                      color: const Color(0xFF1A1A1A),
-                      margin: const EdgeInsets.symmetric(vertical: 5),
-                      child: ListTile(
-                        leading: const Icon(Icons.person_outline, color: Color(0xFFB22222)),
-                        title: const Text('Nome', style: TextStyle(color: Colors.white, fontSize: 14)),
-                        subtitle: Text(_nameController.text, style: const TextStyle(color: Colors.white70, fontSize: 16)),
-                      ),
-                    ),
-                    Card(
-                      color: const Color(0xFF1A1A1A),
-                      margin: const EdgeInsets.symmetric(vertical: 5),
-                      child: ListTile(
-                        leading: const Icon(Icons.phone, color: Color(0xFFB22222)),
-                        title: const Text('Telefone', style: TextStyle(color: Colors.white, fontSize: 14)),
-                        subtitle: Text(_phoneController.text, style: const TextStyle(color: Colors.white70, fontSize: 16)),
-                      ),
-                    ),
-                    Card(
-                      color: const Color(0xFF1A1A1A),
-                      margin: const EdgeInsets.symmetric(vertical: 5),
-                      child: ListTile(
-                        leading: const Icon(Icons.email, color: Color(0xFFB22222)),
-                        title: const Text('Email', style: TextStyle(color: Colors.white, fontSize: 14)),
-                        subtitle: Text(_emailController.text, style: const TextStyle(color: Colors.white70, fontSize: 16)),
-                      ),
-                    ),
-                  ],
+  final String formattedTime = '${_selectedTime!.hour}:${_selectedTime!.minute.toString().padLeft(2, '0')}';
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setStateSheet) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle
+                Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 4),
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
                 ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    if (!mounted) return;
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('Voltar', style: TextStyle(color: Colors.white)),
-                ),
-                ElevatedButton(
-                  onPressed: _isCompletingBooking
-                      ? null
-                      : () async {
-                          if (!mounted) return;
-                          setStateDialog(() {}); // rebuild imediata
 
-                          setStateDialog(() {
-                            _isCompletingBooking = true;
-                          });
-
-                          try {
-                            await _completeBooking();
-                          } finally {
-                            if (mounted) {
-                              setStateDialog(() {
-                                _isCompletingBooking = false;
-                              });
-                            }
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFB22222),
-                    foregroundColor: Colors.white,
+                // Header vermelho
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFB22222),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  child: _isCompletingBooking
-                      ? Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            Text('Processando...'),
-                          ],
-                        )
-                      : const Text('Confirmar'),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Confirmar agendamento',
+                          style: TextStyle(color: Colors.white60, fontSize: 11, letterSpacing: 1)),
+                      const SizedBox(height: 6),
+                      Text(_selectedService!['nome'] ?? '',
+                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 10),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text('€${_finalPrice.toStringAsFixed(2)}',
+                              style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w700)),
+                          const SizedBox(width: 8),
+                          Text('· ${_selectedService!['duracao']} min',
+                              style: const TextStyle(color: Colors.white60, fontSize: 13)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Linhas de detalhe
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Column(
+                    children: [
+                      _summaryRow(Icons.person_outline, 'PROFISSIONAL', _selectedProfessional!.name),
+                      _summaryRow(Icons.calendar_today_outlined, 'DATA',
+                          '${_getWeekdayName(_selectedDate!.weekday)}, ${DateFormat('dd MMM yyyy').format(_selectedDate!)}'),
+                      _summaryRow(Icons.access_time_outlined, 'HORA', formattedTime),
+                      _summaryRow(Icons.storefront_outlined, 'BARBEARIA', _selectedBarbearia!.name),
+                      _summaryRow(Icons.person_outline, 'CLIENTE', _nameController.text,
+                          subtitle: _phoneController.text),
+                      _summaryRow(Icons.mail_outline, 'EMAIL', _emailController.text),
+                    ],
+                  ),
+                ),
+
+                // Nota
+                Container(
+                  margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFB22222).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFB22222).withOpacity(0.25)),
+                  ),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.info_outline, color: Color(0xFFB22222), size: 16),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text('Aguarda aprovação após confirmação.',
+                            style: TextStyle(color: Colors.white60, fontSize: 12)),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Botões
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.white24),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text('Voltar', style: TextStyle(color: Colors.white70)),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                          onPressed: _isCompletingBooking ? null : () async {
+                            setStateSheet(() => _isCompletingBooking = true);
+                            try { await _completeBooking(); }
+                            finally { if (mounted) setStateSheet(() => _isCompletingBooking = false); }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFB22222),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: _isCompletingBooking
+                              ? const SizedBox(width: 20, height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Text('Confirmar agendamento', style: TextStyle(fontWeight: FontWeight.w600)),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
-            );
-          },
-        );
-      },
-    );
- 
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
+Widget _summaryRow(IconData icon, String label, String value, {String? subtitle}) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: Row(
+      children: [
+        Container(
+          width: 36, height: 36,
+          decoration: BoxDecoration(
+            color: const Color(0xFFB22222).withOpacity(0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: const Color(0xFFB22222), size: 18),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: const TextStyle(color: Colors.white38, fontSize: 10, letterSpacing: 0.5)),
+              const SizedBox(height: 2),
+              Text(value, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+              if (subtitle != null)
+                Text(subtitle, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+            ],
+          ),
+        ),
+        const Divider(),
+      ],
+    ),
+  );
 }
 
 
@@ -1281,7 +1268,7 @@ void _showSummaryDialog() async {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                       ),
-                      child: Text(_currentStep == 4 ? 'Confirmar Agendamento' : 'Próximo'),
+                      child: Text(_currentStep == 4 ? 'Agendar' : 'Próximo'),
                     ),
                 ],
               ),
@@ -1903,197 +1890,352 @@ void _showSummaryDialog() async {
     );
   }
 
-  Widget _buildPersonalDataStep() {
-    return Column(
-      children: [
-        const Text(
-          'Inserir Dados Pessoais',
-          style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 10),
-        const Text(
-          'Preencha suas informações para finalizar o agendamento',
-          style: TextStyle(color: Colors.white70),
-        ),
-        const SizedBox(height: 20),
+Widget _buildPersonalDataStep() {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // Título
+      Center(
+        child: const Text('Os seus dados',
+            style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w600)),
+      ),
+      const SizedBox(height: 4),
+      Center(
+        child: const Text('Preencha para finalizar o agendamento.',
+            style: TextStyle(color: Colors.white38, fontSize: 13)),
+      ),
+      const SizedBox(height: 24),
 
-        TextField(
-          controller: _nameController,
-          decoration: InputDecoration(
-            labelText: 'Nome completo',
-            labelStyle: const TextStyle(color: Colors.white),
-            enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
-            focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFB22222))),
-            errorText: _nameError,
-            errorStyle: const TextStyle(color: Colors.red),
+      // Secção campos
+      _stepSectionLabel('Informações pessoais'),
+      const SizedBox(height: 8),
+      _modernField(
+        icon: Icons.person_outline,
+        label: 'NOME COMPLETO',
+        controller: _nameController,
+        placeholder: 'Ex: João Silva',
+        errorText: _nameError,
+      ),
+      const SizedBox(height: 8),
+      _modernField(
+        icon: Icons.phone_outlined,
+        label: 'TELEFONE',
+        controller: _phoneController,
+        placeholder: '9XX XXX XXX',
+        keyboardType: TextInputType.phone,
+        errorText: _phoneError,
+      ),
+      const SizedBox(height: 8),
+      _modernField(
+        icon: Icons.mail_outline,
+        label: 'EMAIL',
+        controller: _emailController,
+        placeholder: 'email@exemplo.com',
+        keyboardType: TextInputType.emailAddress,
+        errorText: _emailError,
+      ),
+
+      // Pontos
+      if (_currentUser != null && _userData != null && _userData!.points >= 100.0) ...[
+        const SizedBox(height: 24),
+        _stepSectionLabel('Pontos de fidelidade'),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFB22222).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFB22222).withOpacity(0.25)),
           ),
-          style: const TextStyle(color: Colors.white),
-        ),
-
-        const SizedBox(height: 10),
-
-        TextField(
-          controller: _phoneController,
-          decoration: InputDecoration(
-            labelText: 'Telefone',
-            labelStyle: const TextStyle(color: Colors.white),
-            enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
-            focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFB22222))),
-            errorText: _phoneError,
-            errorStyle: const TextStyle(color: Colors.red),
+          child: Row(
+            children: [
+              const Icon(Icons.star_outline, color: Color(0xFFB22222), size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${_userData!.points.toStringAsFixed(0)} pontos disponíveis',
+                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
+                    const Text('1 bloco = 100 pts = 10% desconto',
+                        style: TextStyle(color: Colors.white38, fontSize: 11)),
+                  ],
+                ),
+              ),
+            ],
           ),
-          style: const TextStyle(color: Colors.white),
         ),
-
-        const SizedBox(height: 10),
-
-        TextField(
-          controller: _emailController,
-          decoration: InputDecoration(
-            labelText: 'Email',
-            labelStyle: const TextStyle(color: Colors.white),
-            enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
-            focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFB22222))),
-            errorText: _emailError,
-            errorStyle: const TextStyle(color: Colors.red),
-          ),
-          style: const TextStyle(color: Colors.white),
+        const SizedBox(height: 8),
+        _modernToggle(
+          label: 'Usar desconto (${(_availableDiscountBlocks * 10).toStringAsFixed(0)}%)',
+          subtitle: 'Desconta ${(_availableDiscountBlocks * 100).toStringAsFixed(0)} pts · €${_parsePrice(_selectedService!['preco']!).toStringAsFixed(2)} → €${_finalPrice.toStringAsFixed(2)}',
+          value: _usePoints,
+          onChanged: (v) => setState(() => _usePoints = v),
         ),
+      ],
 
-        const SizedBox(height: 10),
-
-        if (_currentUser != null && _userData != null && _userData!.points >= 100.0) ...[
-          CheckboxListTile(
-            title: Text(
-              'Usar pontos para desconto (${(_availableDiscountBlocks * 10).toStringAsFixed(0)}%)',
-              style: const TextStyle(color: Colors.white),
+      // Criar conta
+      if (_currentUser == null) ...[
+        const SizedBox(height: 24),
+        _stepSectionLabel('Conta'),
+        const SizedBox(height: 8),
+        _modernToggle(
+          label: 'Criar conta',
+          subtitle: 'Guarda histórico e recebe promoções',
+          value: _createAccount,
+          onChanged: (v) => setState(() => _createAccount = v),
+        ),
+        if (_createAccount) ...[
+          const SizedBox(height: 8),
+          _modernField(
+            icon: Icons.lock_outline,
+            label: 'SENHA',
+            controller: _passwordController,
+            placeholder: 'Mínimo 6 caracteres',
+            obscureText: !_passwordVisible,
+            errorText: _passwordError,
+            suffixIcon: IconButton(
+              icon: Icon(_passwordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  color: Colors.white38, size: 20),
+              onPressed: () => setState(() => _passwordVisible = !_passwordVisible),
             ),
-            subtitle: Text(
-              'Você tem ${_userData!.points.toStringAsFixed(0)} pontos (${_availableDiscountBlocks} blocos de desconto disponíveis).',
-              style: const TextStyle(color: Colors.white70),
-            ),
-            value: _usePoints,
-            onChanged: (value) => setState(() => _usePoints = value ?? false),
-            controlAffinity: ListTileControlAffinity.leading,
-            activeColor: const Color(0xFFB22222),
           ),
-          if (_usePoints) ...[
-            const SizedBox(height: 10),
-            Text(
-              'Desconto de ${(_availableDiscountBlocks * 10).toStringAsFixed(0)}% aplicado ao agendamento.',
-              style: const TextStyle(color: Colors.green, fontSize: 14),
+          const SizedBox(height: 8),
+          _modernField(
+            icon: Icons.lock_outline,
+            label: 'CONFIRMAR SENHA',
+            controller: _confirmPasswordController,
+            placeholder: 'Repete a senha',
+            obscureText: !_confirmPasswordVisible,
+            errorText: _confirmPasswordError,
+            suffixIcon: IconButton(
+              icon: Icon(_confirmPasswordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  color: Colors.white38, size: 20),
+              onPressed: () => setState(() => _confirmPasswordVisible = !_confirmPasswordVisible),
             ),
-          ],
+          ),
         ],
 
-        if (_currentUser == null) ...[
-          CheckboxListTile(
-            title: const Text('Quero criar uma conta', style: TextStyle(color: Colors.white)),
-            value: _createAccount,
-            onChanged: (value) => setState(() => _createAccount = value ?? false),
-            controlAffinity: ListTileControlAffinity.leading,
-            activeColor: const Color(0xFFB22222),
+        // Termos
+        const SizedBox(height: 20),
+        Container(
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: Colors.white.withOpacity(0.06))),
           ),
-
-          if (_createAccount) ...[
-            const SizedBox(height: 10),
-            const Text(
-              'Crie uma conta para guardar seus agendamentos, receber lembretes e promoções exclusivas.',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-            ),
-            const SizedBox(height: 10),
-
-            TextField(
-              controller: _passwordController,
-              obscureText: !_passwordVisible,
-              decoration: InputDecoration(
-                labelText: 'Senha',
-                labelStyle: const TextStyle(color: Colors.white),
-                enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
-                focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFB22222))),
-                errorText: _passwordError,
-                errorStyle: const TextStyle(color: Colors.red),
-                suffixIcon: IconButton(
-                  icon: Icon(_passwordVisible ? Icons.visibility : Icons.visibility_off, color: Colors.white),
-                  onPressed: () => setState(() => _passwordVisible = !_passwordVisible),
+          padding: const EdgeInsets.only(top: 16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: () => setState(() => _agreeToTerms = !_agreeToTerms),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 22, height: 22,
+                  decoration: BoxDecoration(
+                    color: _agreeToTerms ? const Color(0xFFB22222) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: _agreeToTerms ? const Color(0xFFB22222) : Colors.white24,
+                    ),
+                  ),
+                  child: _agreeToTerms
+                      ? const Icon(Icons.check, color: Colors.white, size: 14)
+                      : null,
                 ),
               ),
-              style: const TextStyle(color: Colors.white),
-            ),
-
-            const SizedBox(height: 10),
-
-            TextField(
-              controller: _confirmPasswordController,
-              obscureText: !_confirmPasswordVisible,
-              decoration: InputDecoration(
-                labelText: 'Confirmar senha',
-                labelStyle: const TextStyle(color: Colors.white),
-                enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
-                focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFB22222))),
-                errorText: _confirmPasswordError,
-                errorStyle: const TextStyle(color: Colors.red),
-                suffixIcon: IconButton(
-                  icon: Icon(_confirmPasswordVisible ? Icons.visibility : Icons.visibility_off, color: Colors.white),
-                  onPressed: () => setState(() => _confirmPasswordVisible = !_confirmPasswordVisible),
+              const SizedBox(width: 12),
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    style: const TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
+                    children: [
+                      const TextSpan(text: 'Aceito os '),
+                      TextSpan(
+                        text: 'termos de uso',
+                        style: const TextStyle(color: Color(0xFFB22222)),
+                        recognizer: TapGestureRecognizer()..onTap = _showTermsDialog,
+                      ),
+                      const TextSpan(text: ' e a '),
+                      TextSpan(
+                        text: 'política de privacidade',
+                        style: const TextStyle(color: Color(0xFFB22222)),
+                        recognizer: TapGestureRecognizer()..onTap = _showTermsDialog,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              style: const TextStyle(color: Colors.white),
+            ],
+          ),
+        ),
+      ] else ...[
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.04),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.06)),
+          ),
+          child: Row(
+            children: const [
+              Icon(Icons.verified_user_outlined, color: Color(0xFFB22222), size: 18),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text('Sessão ativa. Clica em confirmar para finalizar.',
+                    style: TextStyle(color: Colors.white54, fontSize: 13)),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ],
+  );
+}
+
+Widget _stepSectionLabel(String text) {
+  return Text(text,
+      style: const TextStyle(
+          color: Colors.white38, fontSize: 10, letterSpacing: 1, fontWeight: FontWeight.w500));
+}
+
+Widget _modernField({
+  required IconData icon,
+  required String label,
+  required TextEditingController controller,
+  required String placeholder,
+  String? errorText,
+  TextInputType? keyboardType,
+  bool obscureText = false,
+  Widget? suffixIcon,
+}) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Focus(
+        child: Builder(builder: (context) {
+          final focused = Focus.of(context).hasFocus;
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: focused
+                  ? const Color(0xFFB22222).withOpacity(0.06)
+                  : Colors.white.withOpacity(0.04),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: focused
+                    ? const Color(0xFFB22222).withOpacity(0.6)
+                    : errorText != null
+                        ? Colors.red.withOpacity(0.5)
+                        : Colors.white.withOpacity(0.08),
+              ),
             ),
-          ],
-
-          const SizedBox(height: 10),
-
-          RichText(
-            text: TextSpan(
-              text: 'Aceito os ',
-              style: const TextStyle(color: Colors.white),
+            child: Row(
               children: [
-                TextSpan(
-                  text: 'termos de uso',
-                  style: const TextStyle(
-                    color: Color(0xFFB22222),
-                    decoration: TextDecoration.underline,
+                Icon(icon,
+                    color: focused ? const Color(0xFFB22222) : Colors.white38,
+                    size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label,
+                          style: TextStyle(
+                              color: focused ? const Color(0xFFB22222).withOpacity(0.8) : Colors.white38,
+                              fontSize: 10,
+                              letterSpacing: 0.5)),
+                      const SizedBox(height: 3),
+                      TextField(
+                        controller: controller,
+                        obscureText: obscureText,
+                        keyboardType: keyboardType,
+                        style: const TextStyle(color: Colors.white, fontSize: 15),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                          border: InputBorder.none,
+                          hintText: placeholder,
+                          hintStyle: const TextStyle(color: Colors.white24, fontSize: 15),
+                        ),
+                      ),
+                    ],
                   ),
-                  recognizer: TapGestureRecognizer()..onTap = _showTermsDialog,
                 ),
-                const TextSpan(text: ' e '),
-                TextSpan(
-                  text: 'política de privacidade',
-                  style: const TextStyle(
-                    color: Color(0xFFB22222),
-                    decoration: TextDecoration.underline,
-                  ),
-                  recognizer: TapGestureRecognizer()..onTap = _showTermsDialog,
-                ),
+                if (suffixIcon != null) suffixIcon,
+              ],
+            ),
+          );
+        }),
+      ),
+      if (errorText != null)
+        Padding(
+          padding: const EdgeInsets.only(top: 4, left: 4),
+          child: Text(errorText, style: const TextStyle(color: Colors.redAccent, fontSize: 11)),
+        ),
+    ],
+  );
+}
+
+Widget _modernToggle({
+  required String label,
+  required String subtitle,
+  required bool value,
+  required ValueChanged<bool> onChanged,
+}) {
+  return GestureDetector(
+    onTap: () => onChanged(!value),
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: value
+            ? const Color(0xFFB22222).withOpacity(0.08)
+            : Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: value
+              ? const Color(0xFFB22222).withOpacity(0.4)
+              : Colors.white.withOpacity(0.08),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 2),
+                Text(subtitle, style: const TextStyle(color: Colors.white38, fontSize: 12)),
               ],
             ),
           ),
-
-          CheckboxListTile(
-            title: const Text('Aceito os termos', style: TextStyle(color: Colors.white)),
-            value: _agreeToTerms,
-            onChanged: (value) => setState(() => _agreeToTerms = value ?? false),
-            controlAffinity: ListTileControlAffinity.leading,
-          ),
-        ] else ...[
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(16),
+          const SizedBox(width: 12),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 44, height: 26,
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFB22222), width: 1),
+              color: value ? const Color(0xFFB22222) : Colors.white12,
+              borderRadius: BorderRadius.circular(13),
             ),
-            child: const Text(
-              'Como usuário logado, você já aceitou os termos de uso. Clique em "Confirmar Agendamento" para finalizar.',
-              style: TextStyle(color: Colors.white, fontSize: 14),
-              textAlign: TextAlign.center,
+            child: AnimatedAlign(
+              duration: const Duration(milliseconds: 200),
+              alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+              child: Container(
+                width: 20, height: 20,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+              ),
             ),
           ),
         ],
-      ],
-    );
-  }
+      ),
+    ),
+  );
+}
+
 }
 

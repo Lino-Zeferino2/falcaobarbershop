@@ -195,7 +195,85 @@ function processTemplate(template, data) {
   });
   return processed;
 }
+// Função auxiliar
+function timeToMinutes(timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  return h * 60 + m;
+}
 
+exports.createBooking = functions.https.onCall(async (data, context) => {
+  const db = admin.firestore();
+
+  const {
+    professionalId, dateString, timeString,
+    serviceName, professionalName, barbeariaName,
+    clientName, clientPhone, clientEmail,
+    price, durationMinutes, intervaloMinutos,
+    userId, anonymousId
+  } = data;
+
+  // Validação básica
+  if (!professionalId || !dateString || !timeString) {
+    throw new functions.https.HttpsError('invalid-argument', 'Dados incompletos.');
+  }
+
+  return await db.runTransaction(async (transaction) => {
+    // Busca agendamentos existentes para este profissional nesta data
+    const snapshot = await db.collection('agendamentos')
+      .where('professional', '==', professionalId)
+      .where('date', '==', dateString)
+      .where('status', 'in', ['pending', 'confirmed'])
+      .get();
+
+    const newStart = timeToMinutes(timeString);
+    const newEnd = newStart + durationMinutes + intervaloMinutos;
+
+    for (const doc of snapshot.docs) {
+      const d = doc.data();
+      const bookedStart = timeToMinutes(d.time);
+      const bookedEnd = bookedStart + (d.duracao || 0) + (d.intervalo || 0);
+
+      // Verifica sobreposição de horários
+      if (newStart < bookedEnd && newEnd > bookedStart) {
+        throw new functions.https.HttpsError(
+          'already-exists',
+          'horário indisponível'
+        );
+      }
+
+      // Verifica agendamento duplicado do mesmo utilizador
+      if (userId && d.userId === userId && d.time === timeString) {
+        throw new functions.https.HttpsError(
+          'already-exists',
+          'agendamento duplicado'
+        );
+      }
+    }
+
+    // Sem conflitos — cria o agendamento atomicamente
+    const newRef = db.collection('agendamentos').doc();
+    transaction.set(newRef, {
+      professional: professionalId,
+      date: dateString,
+      time: timeString,
+      service: serviceName,
+      professionalName: professionalName,
+      barbearia: barbeariaName,
+      name: clientName,
+      phone: clientPhone,
+      email: clientEmail,
+      price: price,
+      duracao: durationMinutes,
+      intervalo: intervaloMinutos,
+      status: 'pending',
+      userId: userId || null,
+      anonymousId: anonymousId || null,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return { bookingId: newRef.id };
+  });
+});
 // Cloud Function para enviar emails
 exports.sendEmail = functions.firestore
   
