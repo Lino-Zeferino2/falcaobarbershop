@@ -209,16 +209,15 @@ exports.createBooking = functions.https.onCall(async (data, context) => {
     serviceName, professionalName, barbeariaName,
     clientName, clientPhone, clientEmail,
     price, durationMinutes, intervaloMinutos,
-    userId, anonymousId
+    userId, anonymousId,
+    usePoints, pointsToSubtract // NOVO
   } = data;
 
-  // Validação básica
   if (!professionalId || !dateString || !timeString) {
     throw new functions.https.HttpsError('invalid-argument', 'Dados incompletos.');
   }
 
   return await db.runTransaction(async (transaction) => {
-    // Busca agendamentos existentes para este profissional nesta data
     const snapshot = await db.collection('agendamentos')
       .where('professional', '==', professionalId)
       .where('date', '==', dateString)
@@ -233,24 +232,23 @@ exports.createBooking = functions.https.onCall(async (data, context) => {
       const bookedStart = timeToMinutes(d.time);
       const bookedEnd = bookedStart + (d.duracao || 0) + (d.intervalo || 0);
 
-      // Verifica sobreposição de horários
       if (newStart < bookedEnd && newEnd > bookedStart) {
-        throw new functions.https.HttpsError(
-          'already-exists',
-          'horário indisponível'
-        );
+        throw new functions.https.HttpsError('already-exists', 'horário indisponível');
       }
-
-      // Verifica agendamento duplicado do mesmo utilizador
       if (userId && d.userId === userId && d.time === timeString) {
-        throw new functions.https.HttpsError(
-          'already-exists',
-          'agendamento duplicado'
-        );
+        throw new functions.https.HttpsError('already-exists', 'agendamento duplicado');
       }
     }
 
-    // Sem conflitos — cria o agendamento atomicamente
+    // Lê o documento do cliente DENTRO da transaction, se houver userId
+    let userRef = null;
+    let userSnap = null;
+    if (userId) {
+      userRef = db.collection('clientes').doc(userId);
+      userSnap = await transaction.get(userRef);
+    }
+
+    // Cria o agendamento
     const newRef = db.collection('agendamentos').doc();
     transaction.set(newRef, {
       professional: professionalId,
@@ -271,9 +269,46 @@ exports.createBooking = functions.https.onCall(async (data, context) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
+    // Pontos — atómico, dentro da mesma transaction
+    if (userRef && userSnap && userSnap.exists) {
+      const currentPoints = userSnap.data().points || 0;
+      let netPoints = 10; // ganha sempre 10 por agendamento
+
+      if (usePoints && pointsToSubtract > 0 && currentPoints >= pointsToSubtract) {
+        netPoints -= pointsToSubtract;
+      }
+
+      transaction.update(userRef, {
+        points: admin.firestore.FieldValue.increment(netPoints),
+      });
+
+      const historyRef = userRef.collection('pointsHistory').doc();
+      transaction.set(historyRef, {
+        type: 'earned',
+        description: `Agendamento confirmado: ${serviceName}`,
+        points: 10,
+        date: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      if (usePoints && pointsToSubtract > 0 && currentPoints >= pointsToSubtract) {
+        const discountHistoryRef = userRef.collection('pointsHistory').doc();
+        transaction.set(discountHistoryRef, {
+          type: 'spent',
+          description: `Desconto aplicado no agendamento`,
+          points: -pointsToSubtract,
+          date: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      }
+    }
+
     return { bookingId: newRef.id };
   });
 });
+
+function timeToMinutes(timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  return h * 60 + m;
+}
 // Cloud Function para enviar emails
 exports.sendEmail = functions.firestore
   
