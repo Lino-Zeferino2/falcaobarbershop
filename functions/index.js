@@ -270,45 +270,29 @@ exports.createBooking = functions.https.onCall(async (data, context) => {
     });
 
     // Pontos — atómico, dentro da mesma transaction
-    if (userRef && userSnap && userSnap.exists) {
-      const currentPoints = userSnap.data().points || 0;
-      let netPoints = 10; // ganha sempre 10 por agendamento
+    // Pontos — só desconta se usePoints, NÃO soma (soma acontece na confirmação do admin)
+if (userRef && userSnap && userSnap.exists && usePoints && pointsToSubtract > 0) {
+  const currentPoints = userSnap.data().points || 0;
+  
+  if (currentPoints >= pointsToSubtract) {
+    transaction.update(userRef, {
+      points: admin.firestore.FieldValue.increment(-pointsToSubtract),
+    });
 
-      if (usePoints && pointsToSubtract > 0 && currentPoints >= pointsToSubtract) {
-        netPoints -= pointsToSubtract;
-      }
-
-      transaction.update(userRef, {
-        points: admin.firestore.FieldValue.increment(netPoints),
-      });
-
-      const historyRef = userRef.collection('pointsHistory').doc();
-      transaction.set(historyRef, {
-        type: 'earned',
-        description: `Agendamento confirmado: ${serviceName}`,
-        points: 10,
-        date: admin.firestore.FieldValue.serverTimestamp(),
-      });
-
-      if (usePoints && pointsToSubtract > 0 && currentPoints >= pointsToSubtract) {
-        const discountHistoryRef = userRef.collection('pointsHistory').doc();
-        transaction.set(discountHistoryRef, {
-          type: 'spent',
-          description: `Desconto aplicado no agendamento`,
-          points: -pointsToSubtract,
-          date: admin.firestore.FieldValue.serverTimestamp(),
-        });
-      }
-    }
+    const discountHistoryRef = userRef.collection('pointsHistory').doc();
+    transaction.set(discountHistoryRef, {
+      type: 'spent',
+      description: `Desconto de 10% aplicado no agendamento: ${serviceName}`,
+      points: -pointsToSubtract,
+      date: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  }
+}
 
     return { bookingId: newRef.id };
   });
 });
 
-function timeToMinutes(timeStr) {
-  const [h, m] = timeStr.split(':').map(Number);
-  return h * 60 + m;
-}
 // Cloud Function para enviar emails
 exports.sendEmail = functions.firestore
   

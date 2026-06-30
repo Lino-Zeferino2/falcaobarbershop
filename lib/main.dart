@@ -22,19 +22,6 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
-
-
-  // intl initialization (resolve: "locale data has not been initialized")
-  // Needed for DateFormat('...', 'pt_BR') to work on web and other targets.
-  // NOTE: initializeDateFormatting is available only in some intl versions.
-  // If your build target doesn't support it, this can be removed and the DateFormat
-  // usage should be migrated to DateFormat('...', 'pt_BR').format(...) without relying
-  // on global initialization.
-
-
-
-
   runApp(const MyApp());
 }
 

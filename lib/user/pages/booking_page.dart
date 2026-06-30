@@ -708,15 +708,11 @@ class _BookingPageState extends State<BookingPage> with TickerProviderStateMixin
                 style: TextStyle(color: Colors.white, fontSize: 16),
               ),
               actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).pop();
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('OK', style: TextStyle(color: Colors.white)),
-                ),
-              ],
+  TextButton(
+    onPressed: () => Navigator.of(context).pop(),
+    child: const Text('OK', style: TextStyle(color: Colors.white)),
+  ),
+],
             ),
           );
           return;
@@ -1055,7 +1051,7 @@ void _showSummaryDialog() async {
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
-                          child: const Text('Voltar', style: TextStyle(color: Colors.white70)),
+                          child: const Text('Voltar', style: TextStyle(color: Colors.red)),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -1257,7 +1253,7 @@ Widget _summaryRow(IconData icon, String label, String value, {String? subtitle}
                         backgroundColor: Colors.grey,
                         padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                       ),
-                      child: const Text('Voltar'),
+                      child: const Text('Voltar',style: TextStyle(color: Colors.red)),
                     ),
                   const Spacer(),
                   if (_isStepValid())
@@ -1295,44 +1291,46 @@ Widget _summaryRow(IconData icon, String label, String value, {String? subtitle}
         return Container();
     }
   }
+Widget _buildBarbeariaStep() {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text('Escolhe a barbearia',
+          style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w600)),
+      const SizedBox(height: 4),
+      const Text('Seleciona a localização desejada.',
+          style: TextStyle(color: Colors.white38, fontSize: 13)),
+      const SizedBox(height: 20),
 
-  Widget _buildBarbeariaStep() {
-    return Column(
-      children: [
-        const Text(
-          'Selecionar Barbearia',
-          style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 10),
-        const Text(
-          'Escolha a barbearia desejada',
-          style: TextStyle(color: Colors.white70),
-        ),
-        const SizedBox(height: 20),
-
-        if (_isLoadingBarbearias)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(
-              child: CircularProgressIndicator(color: Color(0xFFB22222)),
-            ),
-          )
-        else if (_barbearias.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(
-              child: Text(
-                'Nenhuma barbearia disponível no momento.',
-                style: TextStyle(color: Colors.white70),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          )
-        else
-          ..._barbearias.map((barbearia) {
-            final bool isSelected = _selectedBarbearia == barbearia;
-            return InkWell(
-              borderRadius: BorderRadius.circular(20),
+      if (_isLoadingBarbearias)
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 40),
+          child: Center(child: CircularProgressIndicator(color: Color(0xFFB22222))),
+        )
+      else if (_barbearias.isEmpty)
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.03),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.06)),
+          ),
+          child: const Column(
+            children: [
+              Icon(Icons.storefront_outlined, color: Colors.white24, size: 32),
+              SizedBox(height: 8),
+              Text('Nenhuma barbearia disponível.',
+                  style: TextStyle(color: Colors.white38, fontSize: 13)),
+            ],
+          ),
+        )
+      else
+        ..._barbearias.map((barbearia) {
+          final isSelected = _selectedBarbearia == barbearia;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: GestureDetector(
               onTap: () async {
                 if (!mounted) return;
                 if (_selectedBarbearia == barbearia) {
@@ -1342,100 +1340,119 @@ Widget _summaryRow(IconData icon, String label, String value, {String? subtitle}
                   });
                   return;
                 }
-
                 setState(() {
                   _selectedBarbearia = barbearia;
                   _selectedProfessional = null;
                 });
                 await _loadProfissionais();
               },
-              child: Card(
-                color: const Color(0xFF1A1A1A),
-                margin: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                elevation: 4,
-                shadowColor: Colors.red.withOpacity(0.1),
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1A1A),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: isSelected ? const Color(0xFFB22222) : Colors.white.withOpacity(0.07),
+                    width: isSelected ? 1.5 : 0.5,
+                  ),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: IntrinsicHeight(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 4,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: SizedBox(
-                                height: 250,
-                                child: Image.asset(
-                                  'assets/images/barbearia1.jpeg',
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) => Container(
-                                    color: Colors.grey.shade800,
-                                    child: const Center(
-                                      child: Icon(Icons.storefront, color: Colors.grey),
-                                    ),
-                                  ),
+                      // Imagem — lado esquerdo, mais espaço
+                      Expanded(
+                        flex: 4,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.asset(
+                              'assets/images/barbearia1.jpeg',
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: Colors.grey.shade900,
+                                child: const Center(
+                                  child: Icon(Icons.storefront_outlined, color: Colors.white24, size: 32),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            flex: 3,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 4),
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Icon(Icons.location_on, color: Color(0xFFB22222), size: 18),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        barbearia.name,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                            if (isSelected)
+                              Positioned(
+                                top: 10, left: 10,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFB22222),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.check, color: Colors.white, size: 11),
+                                      SizedBox(width: 3),
+                                      Text('Selecionada',
+                                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600)),
+                                    ],
+                                  ),
                                 ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  barbearia.address,
-                                  maxLines: 4,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(color: Colors.white70, fontSize: 13),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                              ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFFB22222) : Colors.grey,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          child: Text(
-                            isSelected ? 'Selecionada' : 'Selecionar',
-                            style: TextStyle(
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              fontSize: 15,
-                              color: isSelected ? Colors.white : null,
-                            ),
+                      // Texto — lado direito
+                      Expanded(
+                        flex: 5,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(barbearia.name,
+                                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                                      maxLines: 2, overflow: TextOverflow.ellipsis),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Icon(Icons.location_on_outlined, color: Color(0xFFB22222), size: 14),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(barbearia.address,
+                                            style: const TextStyle(color: Colors.white38, fontSize: 12, height: 1.4),
+                                            maxLines: 3, overflow: TextOverflow.ellipsis),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 150),
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(vertical: 9),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? const Color(0xFFB22222) : Colors.white.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: isSelected
+                                      ? null
+                                      : Border.all(color: Colors.white.withOpacity(0.1)),
+                                ),
+                                child: Text(
+                                  isSelected ? 'Selecionada' : 'Selecionar',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: isSelected ? Colors.white : Colors.white54,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -1443,50 +1460,52 @@ Widget _summaryRow(IconData icon, String label, String value, {String? subtitle}
                   ),
                 ),
               ),
-            );
-          }),
-      ],
-    );
-  }
-
-  Widget _buildProfessionalStep() {
-    return Column(
-      children: [
-        const Text(
-          'Selecionar Profissional',
-          style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 10),
-        const Text(
-          'Escolha o barbeiro para o seu serviço',
-          style: TextStyle(color: Colors.white70),
-        ),
-        const SizedBox(height: 20),
-
-        if (_isLoadingProfissionais)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: CircularProgressIndicator(color: Color(0xFFB22222)),
             ),
-          )
-        else if (_profissionais.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(
-              child: Text(
-                'Nenhum profissional disponível no momento.',
-                style: TextStyle(color: Colors.white70),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          )
-        else
-          ..._profissionais.map((professional) {
-            final bool isSelected = _selectedProfessional == professional;
-            return ProfessionalCard(
-              professional: professional,
-              isSelected: isSelected,
+          );
+        }),
+    ],
+  );
+}
+Widget _buildProfessionalStep() {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text('Escolhe o profissional',
+          style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w600)),
+      const SizedBox(height: 4),
+      const Text('Seleciona o barbeiro para o teu serviço.',
+          style: TextStyle(color: Colors.white38, fontSize: 13)),
+      const SizedBox(height: 20),
+
+      if (_isLoadingProfissionais)
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 40),
+          child: Center(child: CircularProgressIndicator(color: Color(0xFFB22222))),
+        )
+      else if (_profissionais.isEmpty)
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.03),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.06)),
+          ),
+          child: const Column(
+            children: [
+              Icon(Icons.person_off_outlined, color: Colors.white24, size: 32),
+              SizedBox(height: 8),
+              Text('Nenhum profissional disponível.',
+                  style: TextStyle(color: Colors.white38, fontSize: 13)),
+            ],
+          ),
+        )
+      else
+        ..._profissionais.map((professional) {
+          final isSelected = _selectedProfessional == professional;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: GestureDetector(
               onTap: () {
                 if (!mounted) return;
                 setState(() {
@@ -1499,11 +1518,111 @@ Widget _summaryRow(IconData icon, String label, String value, {String? subtitle}
                 _loadBookedTimes();
                 _loadServices();
               },
-            );
-          }),
-      ],
-    );
-  }
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? const Color(0xFFB22222).withOpacity(0.06)
+                      : const Color(0xFF1A1A1A),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected
+                        ? const Color(0xFFB22222)
+                        : Colors.white.withOpacity(0.07),
+                    width: isSelected ? 1.5 : 0.5,
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child:  (professional.fotoUrl?.isNotEmpty ?? false)
+    ? Image.network(
+        professional.fotoUrl!,
+        width: 64, height: 64, fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _professionalAvatarPlaceholder(isSelected),
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return _professionalAvatarPlaceholder(isSelected);
+        },
+      )
+    : _professionalAvatarPlaceholder(isSelected),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(professional.name.trim(),
+                              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 3),
+                          Text(professional.descricao.toString(),
+                              style: const TextStyle(color: Colors.white38, fontSize: 12),
+                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 6, runSpacing: 6,
+                            children: professional.diasAtendimento.map((dia) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFB22222).withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(_dayAbbrev(dia),
+                                    style: const TextStyle(color: Color(0xFFB22222), fontSize: 11, fontWeight: FontWeight.w500)),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      width: 22, height: 22,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isSelected ? const Color(0xFFB22222) : Colors.transparent,
+                        border: Border.all(
+                          color: isSelected ? const Color(0xFFB22222) : Colors.white.withOpacity(0.15),
+                        ),
+                      ),
+                      child: isSelected
+                          ? const Icon(Icons.check, color: Colors.white, size: 13)
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+    ],
+  );
+}
+
+Widget _professionalAvatarPlaceholder(bool isSelected) {
+  return Container(
+    width: 64, height: 64,
+    decoration: BoxDecoration(
+      color: const Color(0xFFB22222).withOpacity(0.15),
+      borderRadius: BorderRadius.circular(14),
+    ),
+    child: Icon(Icons.person_outline,
+        color: isSelected ? const Color(0xFFB22222) : Colors.white24, size: 28),
+  );
+}
+
+String _dayAbbrev(String dia) {
+  const map = {
+    'segunda': 'Seg', 'terça': 'Ter', 'quarta': 'Qua',
+    'quinta': 'Qui', 'sexta': 'Sex', 'sábado': 'Sáb', 'domingo': 'Dom',
+  };
+  return map[dia] ?? dia;
+}
 
   Widget _buildServiceStep() {
     final displayedServices = _showAllServices ? _services : _services.take(6).toList();
@@ -1608,23 +1727,7 @@ Widget _summaryRow(IconData icon, String label, String value, {String? subtitle}
                                           color: isSelected ? const Color(0xFFB22222) : Colors.white70,
                                           size: 28,
                                         ),
-                                        const Spacer(),
-                                        if (isSelected)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFB22222),
-                                              borderRadius: BorderRadius.circular(999),
-                                            ),
-                                            child: const Text(
-                                              'Selecionado',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ),
+                                                                             
                                       ],
                                     ),
                                     const SizedBox(height: 10),
@@ -1737,158 +1840,254 @@ Widget _summaryRow(IconData icon, String label, String value, {String? subtitle}
   }
 
   Widget _buildDateTimeStep() {
-    return Column(
-      children: [
-        const Text(
-          'Selecionar Data e Hora',
-          style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 10),
-        const Text(
-          'Escolha uma data e horário disponível',
-          style: TextStyle(color: Colors.white70),
-        ),
-        const SizedBox(height: 20),
+  final times = _getAvailableTimes();
+  final morningTimes = times.where((t) => t.hour < 13).toList();
+  final afternoonTimes = times.where((t) => t.hour >= 13).toList();
 
-        SizedBox(
-          width: MediaQuery.of(context).size.width,
-          child: TableCalendar(
-            key: ValueKey(_calendarKey),
-            firstDay: DateTime.now(),
-            lastDay: DateTime.now().add(const Duration(days: 30)),
-            focusedDay: _selectedDate ?? DateTime.now(),
-            selectedDayPredicate: (day) => isSameDay(_selectedDate, day),
-            enabledDayPredicate: _isDayAvailable,
-            onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDate = selectedDay;
-              });
-              if (_selectedProfessional != null) {
-                _loadBookedTimes();
-              }
-            },
-            calendarFormat: CalendarFormat.week,
-            availableCalendarFormats: const {CalendarFormat.week: 'Semana'},
-            calendarStyle: const CalendarStyle(
-              defaultTextStyle: TextStyle(color: Colors.white),
-              weekendTextStyle: TextStyle(color: Colors.white),
-              selectedDecoration: BoxDecoration(color: Color(0xFFB22222), shape: BoxShape.circle),
-              todayDecoration: BoxDecoration(color: Colors.grey, shape: BoxShape.circle),
-              disabledTextStyle: TextStyle(color: Colors.grey),
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text('Data e hora',
+          style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w600)),
+      const SizedBox(height: 4),
+      const Text('Escolhe o dia e horário disponível.',
+          style: TextStyle(color: Colors.white38, fontSize: 13)),
+      const SizedBox(height: 20),
+
+      // Calendário
+      Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.06)),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: TableCalendar(
+          
+          key: ValueKey(_calendarKey),
+          firstDay: DateTime.now(),
+          lastDay: DateTime.now().add(const Duration(days: 60)),
+          focusedDay: _selectedDate ?? DateTime.now(),
+          selectedDayPredicate: (day) => isSameDay(_selectedDate, day),
+          enabledDayPredicate: _isDayAvailable,
+          onDaySelected: (selectedDay, _) {
+            setState(() {
+              _selectedDate = selectedDay;
+              _selectedTime = null;
+            });
+            _loadBookedTimes();
+          },
+          calendarFormat: CalendarFormat.month,
+          availableCalendarFormats: const {CalendarFormat.month: 'Mês'},
+          calendarStyle: CalendarStyle(
+  // Dias normais
+  defaultTextStyle: const TextStyle(color: Colors.white70, fontSize: 14),
+  defaultDecoration: const BoxDecoration(shape: BoxShape.circle),
+
+  // Fins de semana — igual aos dias normais
+  weekendTextStyle: const TextStyle(color: Colors.white70, fontSize: 14),
+  weekendDecoration: const BoxDecoration(shape: BoxShape.circle),
+
+  // Seleccionado
+  selectedDecoration: const BoxDecoration(
+    color: Color(0xFFB22222),
+    shape: BoxShape.circle,
+  ),
+  selectedTextStyle: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+
+  // Hoje
+  todayDecoration: BoxDecoration(
+    color: Colors.white.withOpacity(0.1),
+    shape: BoxShape.circle,
+  ),
+  todayTextStyle: const TextStyle(color: Colors.white, fontSize: 14),
+
+  // Desactivados
+  disabledTextStyle: TextStyle(
+    color: Colors.white.withOpacity(0.15),
+    fontSize: 14,
+    decoration: TextDecoration.lineThrough,
+  ),
+  disabledDecoration: const BoxDecoration(shape: BoxShape.circle),
+
+  outsideDaysVisible: false,
+  cellMargin: const EdgeInsets.all(3),
+),
+          headerStyle: HeaderStyle(
+            titleTextStyle: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500),
+            formatButtonVisible: false,
+            leftChevronIcon: Container(
+              width: 30, height: 30,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.chevron_left, color: Colors.white, size: 20),
             ),
-            headerStyle: const HeaderStyle(
-              titleTextStyle: TextStyle(color: Colors.white, fontSize: 20),
-              formatButtonTextStyle: TextStyle(color: Colors.white),
-              leftChevronIcon: Icon(Icons.chevron_left, color: Colors.white),
-              rightChevronIcon: Icon(Icons.chevron_right, color: Colors.white),
-            ),
-            daysOfWeekStyle: const DaysOfWeekStyle(
-              weekdayStyle: TextStyle(color: Colors.white),
-              weekendStyle: TextStyle(color: Colors.white),
+            rightChevronIcon: Container(
+              width: 30, height: 30,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.chevron_right, color: Colors.white, size: 20),
             ),
           ),
+          daysOfWeekStyle: DaysOfWeekStyle(
+            weekdayStyle: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11),
+            weekendStyle: TextStyle(color: Colors.white.withOpacity(0.15), fontSize: 11),
+          ),
         ),
-        const SizedBox(height: 10),
-        if (_selectedDate != null) ...[
-          Text(
-            'Data selecionada: ${DateFormat('dd/MM/yyyy').format(_selectedDate!)} - ${_getWeekdayName(_selectedDate!.weekday)}',
-            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+
+      // Data seleccionada
+      if (_selectedDate != null) ...[
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFB22222).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFB22222).withOpacity(0.3)),
           ),
-
-          const SizedBox(height: 10),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _selectedDate = null;
-                _selectedTime = null;
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.grey,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            ),
-            child: const Text('Limpar Data'),
-          ),
-        ],
-        const SizedBox(height: 20),
-        if (_selectedDate != null) ...[
-          const Text('Horários Disponíveis:', style: TextStyle(color: Colors.white, fontSize: 18)),
-          const SizedBox(height: 10),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: MediaQuery.of(context).size.width > 600 ? 70 : 100,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: MediaQuery.of(context).size.width > 600 ? 1.2 : 2.0,
-            ),
-            itemCount: _getAvailableTimes().length,
-            itemBuilder: (context, index) {
-              final time = _getAvailableTimes()[index];
-              final ValueNotifier<bool> hovering = ValueNotifier<bool>(false);
-              final bool isSelected = _selectedTime == time;
-
-              return MouseRegion(
-                onEnter: (_) => hovering.value = true,
-                onExit: (_) => hovering.value = false,
-                child: ValueListenableBuilder<bool>(
-                  valueListenable: hovering,
-                  builder: (context, isHovering, _) {
-                    final Color baseBg = isSelected ? const Color(0xFFB22222) : Colors.grey;
-                    final Color hoverBg = isSelected ? const Color(0xFFB22222).withOpacity(0.85) : const Color(0xFFB22222).withOpacity(0.65);
-
-                    return AnimatedScale(
-                      duration: const Duration(milliseconds: 160),
-                      scale: (isHovering ? 1.06 : 1.0),
-                      curve: Curves.easeOutCubic,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 160),
-                        curve: Curves.easeOutCubic,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: (isHovering || isSelected)
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.red.withOpacity(isSelected ? 0.30 : 0.22),
-                                    blurRadius: isSelected ? 16 : 12,
-                                    spreadRadius: 1,
-                                  )
-                                ]
-                              : [],
-                        ),
-                        child: ElevatedButton(
-                          onPressed: () {
-                            if (!mounted) return;
-                            setState(() => _selectedTime = time);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isHovering ? hoverBg : baseBg,
-                            foregroundColor: (isHovering || isSelected) ? Colors.white : null,
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                            minimumSize: Size.zero,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            elevation: 0,
-                          ),
-                          child: Text(
-                            '${time.hour}:${time.minute.toString().padLeft(2, '0')}',
-                            style: TextStyle(
-                              fontWeight: (isSelected || isHovering) ? FontWeight.bold : null,
-                              fontSize: MediaQuery.of(context).size.width > 600 ? 11 : 14,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+          child: Row(
+            children: [
+              const Icon(Icons.calendar_today_outlined, color: Color(0xFFB22222), size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${_getWeekdayName(_selectedDate!.weekday)}, ${DateFormat('dd MMM yyyy').format(_selectedDate!)}',
+                      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      times.isEmpty ? 'Sem horários disponíveis' : '${times.length} horário${times.length == 1 ? '' : 's'} disponíve${times.length == 1 ? 'l' : 'is'}',
+                      style: const TextStyle(color: Colors.white38, fontSize: 12),
+                    ),
+                  ],
                 ),
-              );
-            },
+              ),
+              if (_selectedDate != null)
+                GestureDetector(
+                  onTap: () => setState(() { _selectedDate = null; _selectedTime = null; }),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text('Limpar', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                  ),
+                ),
+            ],
           ),
+        ),
+
+        // Slots
+        if (times.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.03),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withOpacity(0.06)),
+              ),
+              child: const Column(
+                children: [
+                  Icon(Icons.event_busy_outlined, color: Colors.white24, size: 32),
+                  SizedBox(height: 8),
+                  Text('Sem horários disponíveis neste dia.',
+                      style: TextStyle(color: Colors.white38, fontSize: 13)),
+                ],
+              ),
+            ),
+          )
+        else ...[
+          if (morningTimes.isNotEmpty) ...[
+            _timePeriodHeader(Icons.wb_sunny_outlined, 'MANHÃ', '09:00 – 13:00'),
+            _timeSlotsGrid(morningTimes),
+          ],
+          if (afternoonTimes.isNotEmpty) ...[
+            _timePeriodHeader(Icons.nightlight_outlined, 'TARDE', '14:00 – 21:00'),
+            _timeSlotsGrid(afternoonTimes),
+          ],
         ],
       ],
-    );
-  }
+    ],
+  );
+}
+
+Widget _timePeriodHeader(IconData icon, String label, String range) {
+  return Padding(
+    padding: const EdgeInsets.only(top: 16, bottom: 8),
+    child: Row(
+      children: [
+        Container(
+          width: 28, height: 28,
+          decoration: BoxDecoration(
+            color: const Color(0xFFB22222).withOpacity(0.12),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: const Color(0xFFB22222), size: 14),
+        ),
+        const SizedBox(width: 8),
+        Text(label,
+            style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w500)),
+        const Spacer(),
+        Text(range, style: const TextStyle(color: Colors.white24, fontSize: 11)),
+      ],
+    ),
+  );
+}
+
+Widget _timeSlotsGrid(List<TimeOfDay> times) {
+  return GridView.builder(
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 4,
+      crossAxisSpacing: 8,
+      mainAxisSpacing: 8,
+      childAspectRatio: 2.2,
+    ),
+    itemCount: times.length,
+    itemBuilder: (context, index) {
+      final time = times[index];
+      final selected = _selectedTime == time;
+      return GestureDetector(
+        onTap: () => setState(() => _selectedTime = time),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFFB22222) : Colors.white.withOpacity(0.04),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected
+                  ? const Color(0xFFB22222)
+                  : Colors.white.withOpacity(0.08),
+            ),
+          ),
+          child: Center(
+            child: Text(
+              '${time.hour}:${time.minute.toString().padLeft(2, '0')}',
+              style: TextStyle(
+                color: selected ? Colors.white : Colors.white70,
+                fontSize: 13,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
 
 Widget _buildPersonalDataStep() {
   return Column(
