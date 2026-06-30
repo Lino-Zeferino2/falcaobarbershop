@@ -244,723 +244,726 @@ Future<void> _logout() async {
   }
 
   @override
-  Widget build(BuildContext context) {
-return Scaffold(
-      key: _scaffoldKey,
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0D0D0D),
-        elevation: 0,
-        title: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(4),
-              child: Image.asset('assets/images/logo_falcao.png', height: 40),
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                MediaQuery.of(context).size.width < 400 ? 'Barbershop' : _settings?.barbeariaNome ?? 'Falcão Barbershop',
-                style: const TextStyle(color: Colors.white),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-leading: null,
-        actions: [
-          if (MediaQuery.of(context).size.width > 600) ...[
-           // TextButton(onPressed: () => _scrollToSection(_heroKey), child: const Text('Início', style: TextStyle(color: Colors.white))),
-           // TextButton(onPressed: () => _scrollToSection(_servicesKey), child: const Text('Serviços', style: TextStyle(color: Colors.white))),
-           // TextButton(onPressed: () => _scrollToSection(_vipKey), child: const Text('VIP', style: TextStyle(color: Colors.white))),
-          //  TextButton(onPressed: () => _scrollToSection(_barbersKey), child: const Text('Barbeiros', style: TextStyle(color: Colors.white))),
-            //TextButton(onPressed: () => _scrollToSection(_contactKey), child: const Text('Contato', style: TextStyle(color: Colors.white))),
-            if (_currentUser == null) ...[
-               TextButton(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AnonymousAppointmentsPage())),
-                child: const Text('Meus Agendamentos', style: TextStyle(color: Colors.white)),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: ElevatedButton(
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginPage())),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color.fromARGB(255, 172, 15, 15),
-                      shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                  ),
-                  child: const Text('Entrar', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ] else ...[
-                TextButton(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AnonymousAppointmentsPage())),
-                child: const Text('Meus Agendamentos', style: TextStyle(color: Colors.white)),
-              ),
-              TextButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryPage())), child: const Text('Histórico', style: TextStyle(color: Colors.white))),
-              TextButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PointsOffersPage())), child: const Text('Pontos e Ofertas', style: TextStyle(color: Colors.white))),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: ElevatedButton(
-                  onPressed: _logout,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                  ),
-                  child: const Text('Sair', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: ElevatedButton(
-                onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const BookingPage(),
-                              ),
-                            ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFB22222),
-                  foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                ),
-                child: const Text('Agendar Agora', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ],
+Widget build(BuildContext context) {
+  final isMobile = MediaQuery.of(context).size.width <= 600;
+
+  return Scaffold(
+    key: _scaffoldKey,
+    backgroundColor: const Color(0xFF0D0D0D),
+    appBar: _buildAppBar(isMobile),
+    endDrawer: isMobile ? _buildDrawer() : null,
+    body: SingleChildScrollView(
+      controller: _scrollController,
+      child: Column(
+        children: [
+          _buildHero(isMobile),
+          _buildServicesSection(),
+          _buildCtaSection(isMobile),
+          _buildFooter(),
         ],
       ),
-endDrawer: MediaQuery.of(context).size.width <= 600
-          ? Drawer(
-              backgroundColor: const Color(0xFF0D0D0D),
-              child: ListView(
-                children: [
-                  //ListTile(title: const Text('Início', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold )), onTap: () => _scrollToSection(_heroKey)),
-                 // ListTile(title: const Text('Serviços', style: TextStyle(color: Colors.white)), onTap: () => _scrollToSection(_servicesKey)),
-                 // ListTile(title: const Text('VIP', style: TextStyle(color: Colors.white)), onTap: () => _scrollToSection(_vipKey)),
-                 // ListTile(title: const Text('Barbeiros', style: TextStyle(color: Colors.white)), onTap: () => _scrollToSection(_barbersKey)),
-                 // ListTile(title: const Text('Agendar', style: TextStyle(color: Colors.white)), onTap: () => _scrollToSection(_servicesKey)),
-                //  ListTile(title: const Text('Contato', style: TextStyle(color: Colors.white)), onTap: () => _scrollToSection(_contactKey)),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: ListTile(
-                        title: const Text('Meus Agendamentos', style: TextStyle(color: Colors.white)),
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AnonymousAppointmentsPage())),
-                      ),
-                  ),
-                  if (_currentUser == null) ...[
-                     Padding(
-                       padding: const EdgeInsets.all(8.0),
-                       child: ElevatedButton(
-                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginPage())),
-                        style: ElevatedButton.styleFrom(
-                         backgroundColor: Colors.white,
-                                           foregroundColor: const Color.fromARGB(255, 172, 15, 15),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                           shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                        ),
-                        child: const Text('Entrar', style: TextStyle(fontWeight: FontWeight.bold)),
-                                           ),
-                     ),
-                  ] else ...[
-                    ListTile(title: const Text('Histórico', style: TextStyle(color: Colors.white)), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryPage()))),
-                    ListTile(title: const Text('Pontos e Ofertas', style: TextStyle(color: Colors.white)), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PointsOffersPage()))),
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: ElevatedButton(
-                        onPressed: _logout,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                           shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                        ),
-                        child: const Text('Sair', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
+    ),
+  );
+}
+
+PreferredSizeWidget _buildAppBar(bool isMobile) {
+  return AppBar(
+    backgroundColor: const Color(0xFF0D0D0D),
+    elevation: 0,
+    surfaceTintColor: Colors.transparent,
+    bottom: PreferredSize(
+      preferredSize: const Size.fromHeight(0.5),
+      child: Container(height: 0.5, color: Colors.white.withOpacity(0.06)),
+    ),
+    title: Row(
+      children: [
+        Container(
+          width: 40, height: 40,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.all(4),
+          child: Image.asset('assets/images/logo_falcao.png'),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          _settings?.barbeariaNome ?? 'Falcão Barbershop',
+          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    ),
+    actions: [
+      if (!isMobile) ...[
+        if (_currentUser == null) ...[
+          TextButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AnonymousAppointmentsPage())),
+            child: const Text('Agendamentos', style: TextStyle(color: Colors.white70, fontSize: 13)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage())),
+            child: const Text('Entrar', style: TextStyle(color: Colors.white70, fontSize: 13)),
+          ),
+        ] else ...[
+          TextButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryPage())),
+            child: const Text('Histórico', style: TextStyle(color: Colors.white70, fontSize: 13)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PointsOffersPage())),
+            child: const Text('Pontos', style: TextStyle(color: Colors.white70, fontSize: 13)),
+          ),
+          TextButton(
+            onPressed: _logout,
+            child: const Text('Sair', style: TextStyle(color: Colors.white38, fontSize: 13)),
+          ),
+        ],
+        const SizedBox(width: 4),
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: ElevatedButton.icon(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BookingPage())),
+            icon: const Icon(Icons.content_cut, size: 14),
+            label: const Text('Agendar', style: TextStyle(fontWeight: FontWeight.w600)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFB22222),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ),
+      ] else ...[
+        IconButton(
+          icon: const Icon(Icons.menu, color: Colors.white),
+          onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+        ),
+      ],
+    ],
+  );
+}
+
+Widget _buildDrawer() {
+  return Drawer(
+    backgroundColor: const Color(0xFF0D0D0D),
+    child: SafeArea(
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  width: 40, height: 40,
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.all(4),
+                  child: Image.asset('assets/images/logo_falcao.png'),
+                ),
+                const SizedBox(width: 10),
+                const Text('Falcão Barbershop', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          const Divider(color: Colors.white12),
+          ListTile(
+            leading: const Icon(Icons.calendar_today_outlined, color: Colors.white54, size: 20),
+            title: const Text('Agendamentos', style: TextStyle(color: Colors.white)),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AnonymousAppointmentsPage())),
+          ),
+          if (_currentUser != null) ...[
+            ListTile(
+              leading: const Icon(Icons.history_outlined, color: Colors.white54, size: 20),
+              title: const Text('Histórico', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryPage())),
+            ),
+            ListTile(
+              leading: const Icon(Icons.star_outline, color: Colors.white54, size: 20),
+              title: const Text('Pontos e Ofertas', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PointsOffersPage())),
+            ),
+          ],
+          const Spacer(),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BookingPage())),
+                    icon: const Icon(Icons.content_cut, size: 16),
+                    label: const Text('Agendar Agora', style: TextStyle(fontWeight: FontWeight.w600)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFB22222),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                  ],
-                  const SizedBox(height: 20),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const BookingPage(),
-                            ),
-                          ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFB22222),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                         shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                  ),
+                ),
+                if (_currentUser == null) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage())),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.white24),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      child: const Text('Agendar Agora', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text('Entrar', style: TextStyle(color: Colors.white70)),
+                    ),
+                  ),
+                ] else ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: _logout,
+                      child: const Text('Sair', style: TextStyle(color: Colors.white38)),
                     ),
                   ),
                 ],
-              ),
-            )
-          : null,
-          
-      body: SingleChildScrollView(
-        controller: _scrollController,
-        child: Column(
-          children: [
-            // Hero Section
-            
-Container(
-  key: _heroKey,
-  height: MediaQuery.of(context).size.height * 0.85,
-  decoration: const BoxDecoration(
-    image: DecorationImage(
-      image: AssetImage('assets/images/hero.png'),
-      fit: BoxFit.cover,
-    ),
-  ),
-  child: Stack(
-    children: [
-      // Gradient overlay elegante
-      Container(
-        decoration: BoxDecoration(
-           gradient: LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [
-        Colors.black.withOpacity(0.9),
-        Colors.black.withOpacity(0.85),
-      ],
-    ),
-        ),
+              ],
+            ),
+          ),
+        ],
       ),
+    ),
+  );
+}
 
-      // Conteúdo
-      LayoutBuilder(
-        builder: (context, constraints) {
-          final isDesktop = constraints.maxWidth > 600;
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1100),
-                child: isDesktop
-                    ? Row(
-                     mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Lado esquerdo (texto e CTAs maiores e mais alinhados)
-                          Expanded(
-                            flex: 4,
-                            child: Transform.translate(
-                              offset: const Offset(-100, 0),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                if (_userModel != null) ...[
-                                  Text(
-                                    'Olá, ${_userModel!.name}',
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                ],
-                                Text(
-                                  _settings?.descricaoCurta ?? 'Excelência em cada corte',
-                                  textAlign: TextAlign.left,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
-                                    letterSpacing: 0.8,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  _settings?.subDescricao ??
-                                      'Estilo, precisão e profissionalismo num só lugar.',
-                                  textAlign: TextAlign.left,
-                                  maxLines: 3,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: MediaQuery.of(context).size.width > 900 ? 12 : 11,
-                                    color: Colors.white70,
-                                    height: 1.3,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.circle,
-                                      size: 9,
-                                      color: _isBarbershopOpen
-                                          ? Colors.greenAccent
-                                          : Colors.redAccent,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      _isBarbershopOpen
-                                          ? 'Aberto agora'
-                                          : 'Fechado no momento',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: _isBarbershopOpen
-                                            ? Colors.greenAccent
-                                            : Colors.redAccent,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 14),
-                                AnimatedBuilder(
-                                  animation: _animationController,
-                                  builder: (context, child) {
-                                    return Transform.scale(
-                                      scale: _scaleAnimation.value,
-                                      child: SizedBox(
-                                        height: 40,
-                                        
-                                        child: SizedBox(
-                                          width: 220,
-                                          child: ElevatedButton(
-                                            onPressed: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) => const BookingPage(),
-                                                ),
-                                              );
-                                            },
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: const Color(0xFFB22222),
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 20,
-                                                vertical: 12,
-                                              ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(6),
-                                              ),
-                                              elevation: 8,
-                                            ),
-                                            child: const Text(
-                                              'Agendar Agora',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                                letterSpacing: 0.3,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                const SizedBox(height: 10),
-                                SizedBox(
-                                  height: 40,
-                                  width: 260,
-                                  child: ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => const PortfolioWorksPage(),
-                                        ),
-                                      );
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.black,
-                                      side: const BorderSide(color: Colors.red, width: 2),
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 18,
-                                        vertical: 10,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      elevation: 8,
-                                    ),
-                                    child: const Text(
-                                      'Nossos Trabalhos',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 0.3,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          ),
-                          const SizedBox(width: 20),
-
-                          // Lado direito (imagem com borda vermelha grande)
-                          Expanded(
-                            flex: 10,
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: Container(
-                                width: constraints.maxWidth * 0.45,
-                                height: constraints.maxWidth * 0.45,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: const Color.fromARGB(255, 225, 50, 50),
-                                    width: 12,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.35),
-                                      blurRadius: 18,
-                                      offset: const Offset(0, 10),
-                                    ),
-                                  ],
-                                ),
-                                child: Container(
-                                  width: constraints.maxWidth * 0.40,
-                                  height: constraints.maxWidth * 0.40,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: const Color.fromARGB(255, 204, 40, 40),
-                                      width: 12,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.35),
-                                        blurRadius: 18,
-                                        offset: const Offset(0, 10),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Container(
-                                    width: constraints.maxWidth * 0.30,
-                                    height: constraints.maxWidth * 0.30,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: const Color(0xFFB22222),
-                                        width: 12,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.35),
-                                          blurRadius: 18,
-                                          offset: const Offset(0, 10),
-                                        ),
-                                      ],
-                                    ),
-                                    padding: const EdgeInsets.all(6),
-                                child: AnimatedBuilder(
-                                      animation: _animationController,
-                                      builder: (context, child) {
-                                        return Transform.translate(
-                                          offset: _heroImageFloatAnimation.value,
-                                          child: Transform.scale(
-                                            scale: _heroImageScaleAnimation.value,
-                                            child: child,
-                                          ),
-                                        );
-                                      },
-                                      child: ClipOval(
-                                        child: Image.asset(
-                                          'assets/images/falcao.jpg',
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ),
-
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
-                    : Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 32),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        // Imagem em formato circular também na visão mobile
-                        Center(
-                          child: Container(
-                             width: 270,
-                            height: 270,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Color.fromARGB(255, 225, 50, 50),
-                                  width: 20,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 30,
-                                    offset: const Offset(0, 15),
-                                  ),
-                                ],
-                              ),
-                            child: Container(
-                               width: 260,
-                              height: 260,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: const Color.fromARGB(255, 200, 59, 59),
-                                    width: 12,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.10),
-                                      blurRadius: 30,
-                                      offset: const Offset(0, 15),
-                                    ),
-                                  ],
-                                ),
-                              child: Container(
-                                width: 250,
-                                height: 250,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color:   const Color(0xFFB22222),
-                                    width: 12,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.35),
-                                      blurRadius: 30,
-                                      offset: const Offset(0, 15),
-                                    ),
-                                  ],
-                                ),
-                                padding: const EdgeInsets.all(0),
-                                child: AnimatedBuilder(
-                                  animation: _animationController,
-                                  builder: (context, child) {
-                                    return Transform.translate(
-                                      offset: _heroImageFloatAnimation.value,
-                                      child: Transform.scale(
-                                        scale: _heroImageScaleAnimation.value,
-                                        child: child,
-                                      ),
-                                    );
-                                  },
-                                  child: ClipOval(
-                                    child: Image.asset(
-                                      'assets/images/falcao.jpg',
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 80),
-                        if (_userModel != null) ...[
-                          Text(
-                            'Olá, ${_userModel!.name}',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 13,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                        ],
-                        Text(
-                          _settings?.descricaoCurta ?? 'Excelência em cada corte',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _settings?.subDescricao ??
-                              'Estilo, precisão e profissionalismo num só lugar.',
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Colors.white70,
-                            height: 1.3,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.circle,
-                              size: 9,
-                              color: _isBarbershopOpen
-                                  ? Colors.greenAccent
-                                  : Colors.redAccent,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              _isBarbershopOpen
-                                  ? 'Aberto agora'
-                                  : 'Fechado no momento',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: _isBarbershopOpen
-                                    ? Colors.greenAccent
-                                    : Colors.redAccent,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          height: 40,
-                          width: 180,
-                          child: AnimatedBuilder(
-                            animation: _animationController,
-                            builder: (context, child) {
-                              return Transform.scale(
-                                scale: _scaleAnimation.value,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => const BookingPage(),
-                                      ),
-                                    );
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFB22222),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Agendar Agora',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        SizedBox(
-                          height: 40,
-                          width: 200,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const PortfolioWorksPage(),
-                                ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.black,
-                              side: const BorderSide(color: Colors.red, width: 2),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                            ),
-                            child: const Text(
-                              'Nossos Trabalhos',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                                              ),
+Widget _buildHero(bool isMobile) {
+  return Container(
+    key: _heroKey,
+    constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height * 0.88),
+    decoration: const BoxDecoration(color: Color(0xFF0D0D0D)),
+    child: Stack(
+      children: [
+        // Glow de fundo
+        Positioned(
+          top: 0, left: 0, right: 0, bottom: 0,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: isMobile ? Alignment.topCenter : Alignment.centerRight,
+                radius: 1.2,
+                colors: [
+                  const Color(0xFFB22222).withOpacity(0.12),
+                  Colors.transparent,
+                ],
               ),
             ),
-          );
-        },
+          ),
+        ),
+
+        // Conteúdo
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 20 : 40,
+              vertical: isMobile ? 40 : 60,
+            ),
+            child: isMobile ? _buildHeroMobile() : _buildHeroDesktop(),
+          ),
+        ),
+
+        // WhatsApp FAB
+        Positioned(
+          right: 16, bottom: 16,
+          child: FloatingActionButton(
+            backgroundColor: const Color(0xFF25D366),
+            elevation: 6,
+            tooltip: 'WhatsApp',
+            onPressed: () {
+              final msg = Uri.encodeComponent('Olá! Tenho interesse em agendar um corte.');
+              _openUrl('https://wa.me/351925203598?text=$msg');
+            },
+            child: const FaIcon(FontAwesomeIcons.whatsapp, color: Colors.white),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildHeroMobile() {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: [
+      _buildOpenBadge(),
+      const SizedBox(height: 32),
+      _buildPhotoCircle(240),
+      const SizedBox(height: 32),
+      if (_userModel != null) ...[
+        Text('Olá, ${_userModel!.name.split(' ').first}',
+            style: const TextStyle(color: Colors.white54, fontSize: 14)),
+        const SizedBox(height: 8),
+      ],
+      Text(
+        _settings?.descricaoCurta ?? 'Estilo que\nfala por si.',
+        textAlign: TextAlign.center,
+        style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w800, height: 1.1),
       ),
-
-
-      // FloatingActionButton dentro do hero (canto direito, mais para cima)
-      Positioned(
-        right: 16,
-        bottom: 10,
-        child: FloatingActionButton(
-          backgroundColor:  Color.fromARGB(255, 34, 113, 54),
-          elevation: 6,
-          tooltip: 'WhatsApp',
-          onPressed: () {
-            final message = Uri.encodeComponent(
-              'Olá! Tenho interesse em agendar um corte. Pode me ajudar com horários?',
-            );
-            _openUrl('https://wa.me/351925203598?text=$message');
-          },
-          child:  FaIcon(
-            FontAwesomeIcons.whatsapp,
-            color: Colors.white,
+      const SizedBox(height: 12),
+      Text(
+        _settings?.subDescricao ?? 'Precisão, estilo e profissionalismo num só lugar.',
+        textAlign: TextAlign.center,
+        style: const TextStyle(color: Colors.white38, fontSize: 14, height: 1.6),
+        maxLines: 3,
+      ),
+      const SizedBox(height: 28),
+      SizedBox(
+        width: double.infinity,
+        child: AnimatedBuilder(
+          animation: _animationController,
+          builder: (context, child) => Transform.scale(scale: _scaleAnimation.value, child: child),
+          child: ElevatedButton.icon(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BookingPage())),
+            icon: const Icon(Icons.content_cut, size: 16),
+            label: const Text('Agendar Agora', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFB22222),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
           ),
         ),
       ),
+      const SizedBox(height: 10),
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PortfolioWorksPage())),
+          icon: const Icon(Icons.play_circle_outline, size: 16),
+          label: const Text('Nossos Trabalhos', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white,
+            side: const BorderSide(color: Colors.white24),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      ),
+      const SizedBox(height: 36),
+      _buildStats(isMobile: true),
     ],
-  ),
-),
+  );
+}
 
-
-            _buildFooter(),
+Widget _buildHeroDesktop() {
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: [
+      Expanded(
+        flex: 5,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildOpenBadge(),
+            const SizedBox(height: 24),
+            if (_userModel != null) ...[
+              Text('Olá, ${_userModel!.name.split(' ').first}',
+                  style: const TextStyle(color: Colors.white54, fontSize: 15)),
+              const SizedBox(height: 10),
+            ],
+            Text(
+              _settings?.descricaoCurta ?? 'Estilo que\nfala por si.',
+              style: const TextStyle(color: Colors.white, fontSize: 52, fontWeight: FontWeight.w800, height: 1.05),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _settings?.subDescricao ?? 'Precisão, estilo e profissionalismo num só lugar. Agenda o teu próximo corte agora.',
+              style: const TextStyle(color: Colors.white38, fontSize: 16, height: 1.6),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                AnimatedBuilder(
+                  animation: _animationController,
+                  builder: (context, child) => Transform.scale(scale: _scaleAnimation.value, child: child),
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BookingPage())),
+                    icon: const Icon(Icons.content_cut, size: 16),
+                    label: const Text('Agendar Agora', style: TextStyle(fontWeight: FontWeight.w600)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFB22222),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PortfolioWorksPage())),
+                  icon: const Icon(Icons.play_circle_outline, size: 16),
+                  label: const Text('Nossos Trabalhos', style: TextStyle(fontWeight: FontWeight.w600)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white24),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 48),
+            _buildStats(isMobile: false),
           ],
         ),
       ),
-    );
-  }
+      const SizedBox(width: 60),
+      Expanded(
+        flex: 4,
+        child: Center(child: _buildPhotoCircle(320)),
+      ),
+    ],
+  );
+}
 
+Widget _buildOpenBadge() {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+    decoration: BoxDecoration(
+      color: _isBarbershopOpen
+          ? Colors.green.withOpacity(0.1)
+          : Colors.red.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(
+        color: _isBarbershopOpen
+            ? Colors.green.withOpacity(0.3)
+            : Colors.red.withOpacity(0.3),
+      ),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 7, height: 7,
+          decoration: BoxDecoration(
+            color: _isBarbershopOpen ? Colors.greenAccent : Colors.redAccent,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          _isBarbershopOpen ? 'Aberto agora · Castelo Branco' : 'Fechado no momento',
+          style: TextStyle(
+            color: _isBarbershopOpen ? Colors.greenAccent : Colors.redAccent,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildPhotoCircle(double size) {
+  return AnimatedBuilder(
+    animation: _animationController,
+    builder: (context, child) {
+      return Transform.translate(
+        offset: Offset(0, _heroImageFloatAnimation.value.dy),
+        child: child,
+      );
+    },
+    child: Stack(
+      alignment: Alignment.center,
+      children: [
+        // Anéis pulsantes
+        ...List.generate(3, (i) {
+          return AnimatedBuilder(
+            animation: _animationController,
+            builder: (context, _) {
+              final opacity = (0.15 - i * 0.04) * (0.5 + 0.5 * _animationController.value);
+              return Container(
+                width: size + 30 + i * 20,
+                height: size + 30 + i * 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFFB22222).withOpacity(opacity),
+                    width: 1.5,
+                  ),
+                ),
+              );
+            },
+          );
+        }),
+
+        // Foto
+        Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFFB22222), width: 4),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFB22222).withOpacity(0.3),
+                blurRadius: 30,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: Image.asset('assets/images/falcao.jpg', fit: BoxFit.cover),
+          ),
+        ),
+
+        // Badge avaliação
+        Positioned(
+          top: 20, right: 0,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10)],
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('⭐⭐⭐⭐⭐', style: TextStyle(fontSize: 10)),
+                SizedBox(height: 2),
+                Text('4.9 · 500+ clientes', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildStats({required bool isMobile}) {
+  final stats = [
+    ('500+', 'Clientes'),
+    ('4.9', 'Avaliação'),
+    ('5+', 'Anos exp.'),
+    ('+10 mil ', 'Cortes'),
+  ];
+
+  return Wrap(
+    spacing: isMobile ? 24 : 40,
+    runSpacing: 16,
+    children: stats.asMap().entries.map((entry) {
+      final i = entry.key;
+      final stat = entry.value;
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (i > 0)
+            Container(
+              width: 1, height: 32,
+              color: Colors.white.withOpacity(0.08),
+              margin: EdgeInsets.only(right: isMobile ? 24 : 40),
+            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(stat.$1, style: const TextStyle(color: Color(0xFFB22222), fontSize: 26, fontWeight: FontWeight.w800)),
+              Text(stat.$2, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+            ],
+          ),
+        ],
+      );
+    }).toList(),
+  );
+}
+
+Widget _buildServicesSection() {
+  return FutureBuilder<SettingsModel?>(
+    future: AdminController().getSettings(),
+    builder: (context, snapshot) {
+      final isMobile = MediaQuery.of(context).size.width <= 600;
+
+      return Container(
+        key: _servicesKey,
+        padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 20 : 40,
+          vertical: 60,
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('SERVIÇOS',
+                  style: TextStyle(color: Color(0xFFB22222), fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('O que oferecemos',
+                      style: isMobile?  TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700): TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700)),
+                  TextButton(
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BookingPage())),
+                    child:  Text('Ver todos →', style: TextStyle(color: Colors.white38, fontSize: 13)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              // Preview de 3 serviços do Firestore
+              StreamBuilder(
+                stream: AdminController().getAllActiveServices(),
+                builder: (context, snapshot) {
+                  final services = List.from(snapshot.data ?? []);
+services.shuffle();
+final randomServices = services.take(3).toList();
+                  if (services.isEmpty) return const SizedBox.shrink();
+
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: isMobile ? 1 : 3,
+                      crossAxisSpacing: 14,
+                      mainAxisSpacing: 14,
+                      childAspectRatio: isMobile ? 2.5 : 1.1,
+                    ),
+                 itemCount: randomServices.length,
+                    itemBuilder: (context, index) {
+                     final s = randomServices[index];
+                      return GestureDetector(
+                        onTap: () => Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => BookingPage(selectedService: {
+                              'nome': s.nome, 'preco': s.preco, 'duracao': s.duracao,
+                            }))),
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1A1A1A),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.white.withOpacity(0.07)),
+                          ),
+                          child: isMobile
+                              ? Row(
+                                  children: [
+                                    Container(
+                                      width: 48, height: 48,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFB22222).withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(Icons.content_cut, color: Color(0xFFB22222), size: 22),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Text(s.nome, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+                                          const SizedBox(height: 4),
+                                          Text('${s.duracao} min', style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                                        ],
+                                      ),
+                                    ),
+                                    Text('€${s.preco.toStringAsFixed(0)}',
+                                        style: const TextStyle(color: Color(0xFFB22222), fontSize: 20, fontWeight: FontWeight.w800)),
+                                  ],
+                                )
+                              : Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: 44, height: 44,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFB22222).withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(Icons.content_cut, color: Color(0xFFB22222), size: 20),
+                                    ),
+                                    const SizedBox(height: 14),
+                                    Text(s.nome, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600), maxLines: 2),
+                                    const SizedBox(height: 4),
+                                    Text('${s.duracao} min', style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                                    const Spacer(),
+                                    Text('€${s.preco.toStringAsFixed(0)}',
+                                        style: const TextStyle(color: Color(0xFFB22222), fontSize: 24, fontWeight: FontWeight.w800)),
+                                  ],
+                                ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+Widget _buildCtaSection(bool isMobile) {
+  return Container(
+    margin: EdgeInsets.symmetric(horizontal: isMobile ? 20 : 40, vertical: 20),
+    padding: EdgeInsets.all(isMobile ? 28 : 40),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [const Color(0xFFB22222).withOpacity(0.15), const Color(0xFF0D0D0D)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: const Color(0xFFB22222).withOpacity(0.2)),
+    ),
+    child: Column(
+      children: [
+        const Text('Pronto para o próximo corte?',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 10),
+        const Text('Agenda agora ou fala connosco directamente pelo WhatsApp.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white38, fontSize: 14)),
+        const SizedBox(height: 28),
+        Wrap(
+          spacing: 12, runSpacing: 12,
+          alignment: WrapAlignment.center,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BookingPage())),
+              icon: const Icon(Icons.content_cut, size: 16),
+              label: const Text('Agendar Agora', style: TextStyle(fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFB22222),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed: () {
+                final msg = Uri.encodeComponent('Olá! Tenho interesse em agendar um corte.');
+                _openUrl('https://wa.me/351925203598?text=$msg');
+              },
+              icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
+              label: const Text('WhatsApp', style: TextStyle(fontWeight: FontWeight.w600)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF25D366),
+                side: const BorderSide(color: Color(0xFF25D366)),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
   IconData _getIconFromName(String iconName) {
     switch (iconName) {
       case 'face':
