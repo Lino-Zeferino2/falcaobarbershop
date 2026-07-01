@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 import '../model/user_model.dart';
 import '../../firestore_instance.dart';
 import 'booking_page.dart';
-import 'home_user.dart';
 
 class PointsOffersPage extends StatefulWidget {
   const PointsOffersPage({super.key});
@@ -20,6 +19,9 @@ class _PointsOffersPageState extends State<PointsOffersPage> {
   UserModel? _userData;
   bool _isLoading = true;
   List<Map<String, dynamic>> _pointsHistory = [];
+  bool _historyExpanded = false;
+  // Níveis do programa
+  static const int _nextLevelPoints = 1000;
 
   @override
   void initState() {
@@ -32,18 +34,12 @@ class _PointsOffersPageState extends State<PointsOffersPage> {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
-        DocumentSnapshot userDoc = await firestore.collection('clientes').doc(user.uid).get();
-        if (userDoc.exists) {
-          setState(() {
-            _userData = UserModel.fromMap(userDoc.data() as Map<String, dynamic>);
-          });
-        } else {
-          DocumentSnapshot oldUserDoc = await firestore.collection('users').doc(user.uid).get();
-          if (oldUserDoc.exists) {
-            setState(() {
-              _userData = UserModel.fromMap(oldUserDoc.data() as Map<String, dynamic>);
-            });
-          }
+        DocumentSnapshot doc = await firestore.collection('clientes').doc(user.uid).get();
+        if (!doc.exists) {
+          doc = await firestore.collection('users').doc(user.uid).get();
+        }
+        if (doc.exists) {
+          setState(() => _userData = UserModel.fromMap(doc.data() as Map<String, dynamic>));
         }
       } catch (e) {
         debugPrint('Error loading user data: $e');
@@ -54,330 +50,124 @@ class _PointsOffersPageState extends State<PointsOffersPage> {
 
   Future<void> _loadPointsHistory() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      try {
-        final snapshot = await firestore
-            .collection('clientes')
-            .doc(user.uid)
-            .collection('pointsHistory')
-            .orderBy('date', descending: true)
-            .get();
-        setState(() {
-          _pointsHistory = snapshot.docs.map((doc) => doc.data()..['id'] = doc.id).toList();
-        });
-      } catch (e) {
-        debugPrint('Error loading points history: $e');
-      }
-    }
-  }
-
-  Future<void> _useOffer(String offerType, int pointsRequired) async {
-    if (_userData == null || _userData!.points < pointsRequired) return;
-
-    final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
     try {
-      // Update user points
-      await firestore.collection('clientes').doc(user.uid).update({
-        'points': FieldValue.increment(-pointsRequired),
-      });
-
-      // Add to history
-      await firestore
+      final snapshot = await firestore
           .collection('clientes')
           .doc(user.uid)
           .collection('pointsHistory')
-          .add({
-            'type': 'spent',
-            'description': 'Usou oferta: $offerType',
-            'points': -pointsRequired,
-            'date': Timestamp.now(),
-          });
-
-      // Reload data
-      await _loadUserData();
-      await _loadPointsHistory();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Oferta utilizada com sucesso!')),
-      );
+          .orderBy('date', descending: true)
+          .limit(20)
+          .get();
+      setState(() {
+        _pointsHistory = snapshot.docs.map((d) => d.data()).toList();
+      });
     } catch (e) {
-      debugPrint('Error using offer: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao utilizar oferta')),
-      );
+      debugPrint('Error loading points history: $e');
     }
+  }
+
+  int get _agendamentosParaProximoNivel {
+    if (_userData == null) return 0;
+    final pts = _userData!.points;
+    final restante = _nextLevelPoints - (pts % _nextLevelPoints);
+    return (restante / 10).ceil();
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Pontos e Ofertas'),
-          backgroundColor: const Color(0xFF0D0D0D),
-          foregroundColor: Colors.white,
-        ),
+        backgroundColor: const Color(0xFF0D0D0D),
+        appBar: _buildAppBar(),
         body: const Center(child: CircularProgressIndicator(color: Color(0xFFB22222))),
       );
     }
 
     if (_userData == null) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Pontos e Ofertas'),
-          backgroundColor: const Color(0xFF0D0D0D),
-          foregroundColor: Colors.white,
-        ),
+        backgroundColor: const Color(0xFF0D0D0D),
+        appBar: _buildAppBar(),
         body: const Center(
-          child: Text(
-            'Você precisa estar logado para acessar esta página.',
-            style: TextStyle(color: Colors.white),
-          ),
+          child: Text('Precisa de estar autenticado.', style: TextStyle(color: Colors.white54)),
         ),
       );
     }
 
+    final pts = _userData!.points;
+    final progress = (pts % _nextLevelPoints) / _nextLevelPoints;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pontos e Ofertas'),
-        backgroundColor: const Color(0xFF0D0D0D),
-        foregroundColor: Colors.white,
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF0D0D0D), Color(0xFF1A1A1A)],
-          ),
-        ),
+      backgroundColor: const Color(0xFF0D0D0D),
+      appBar: _buildAppBar(),
+      body: RefreshIndicator(
+        color: const Color(0xFFB22222),
+        backgroundColor: const Color(0xFF1A1A1A),
+        onRefresh: () async {
+          await _loadUserData();
+          await _loadPointsHistory();
+        },
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
-              Card(
-                color: const Color(0xFF1A1A1A),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 4,
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Olá, ${_userData!.name}! 👋',
-                        style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Tens ${_userData!.points.toStringAsFixed(0)} pontos disponíveis!',
-                        style: const TextStyle(color: Color(0xFFB22222), fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Agenda e ganha pontos! Troca por descontos e ofertas exclusivas.',
-                        style: TextStyle(color: Colors.white70, fontSize: 14),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
+              _buildPointsCard(pts, progress),
+              const SizedBox(height: 28),
+              _buildSectionLabel('OFERTAS DISPONÍVEIS'),
+              const SizedBox(height: 6),
+              const Text('O que podes resgatar',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 14),
+              _buildOfferCard(
+                icon: Icons.content_cut_outlined,
+                title: 'Desconto 10%',
+                subtitle: 'No próximo agendamento',
+                pts: 100,
+                userPts: pts,
               ),
-              const SizedBox(height: 20),
-
-              // Como Funciona
-              const Text(
-                'Como Funciona',
-                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              _buildOfferCard(
+                icon: Icons.face_outlined,
+                title: 'Barba grátis',
+                subtitle: 'Com qualquer corte',
+                pts: 250,
+                userPts: pts,
               ),
-              const SizedBox(height: 10),
-              Card(
-                color: const Color(0xFF1A1A1A),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 4,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      ListTile(
-                        leading: Icon(Icons.calendar_today, color: Color(0xFFB22222)),
-                        title: Text('Cada agendamento confirmado = +10 pontos', style: TextStyle(color: Colors.white)),
-                      ),
-                      ListTile(
-                        leading: Icon(Icons.cancel, color: Color(0xFFB22222)),
-                        title: Text('Cancelamentos até 45min não retiram pontos', style: TextStyle(color: Colors.white)),
-                      ),
-                      ListTile(
-                        leading: Icon(Icons.euro, color: Color(0xFFB22222)),
-                        title: Text('Cada 100 pontos = 10% de desconto no próximo corte', style: TextStyle(color: Colors.white)),
-                      ),
-                      ListTile(
-                        leading: Icon(Icons.star, color: Color(0xFFB22222)),
-                        title: Text('Ofertas especiais disponíveis quando atinges certos níveis', style: TextStyle(color: Colors.white)),
-                      ),
-                    ],
-                  ),
-                ),
+              _buildOfferCard(
+                icon: Icons.star_outline,
+                title: 'Corte VIP',
+                subtitle: 'Corte + Barba + Skincare',
+                pts: 500,
+                userPts: pts,
               ),
-              const SizedBox(height: 20),
-
-              // Tuas Ofertas Ativas
-              const Text(
-                'Tuas Ofertas Ativas',
-                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              if (_userData!.points >= 100)
-                Card(
-                  color: const Color(0xFF1A1A1A),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 4,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.content_cut, color: Color(0xFFB22222), size: 40),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Corte Premium', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                              Text('Desconto de 10%', style: TextStyle(color: Colors.white70)),
-                              Text('100 pts', style: TextStyle(color: Color(0xFFB22222), fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            _useOffer('Corte Premium - 10% desconto', 100);
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => const HomeUser(scrollToServices: true)));
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFB22222),
-                            foregroundColor: Colors.white,
-                          ),
-                          child: const Text('Usar Agora'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              if (_userData!.points >= 250)
-                Card(
-                  color: const Color(0xFF1A1A1A),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 4,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.face_retouching_natural, color: Color(0xFFB22222), size: 40),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Barba Deluxe', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                              Text('Grátis com corte', style: TextStyle(color: Colors.white70)),
-                              Text('250 pts', style: TextStyle(color: Color(0xFFB22222), fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            _useOffer('Barba Deluxe grátis', 250);
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => const HomeUser(scrollToServices: true)));
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFB22222),
-                            foregroundColor: Colors.white,
-                          ),
-                          child: const Text('Reservar'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              if (_userData!.points < 100)
-                Card(
-                  color: const Color(0xFF1A1A1A),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 4,
-                  child: const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Center(
-                      child: Text(
-                        'Ganhe mais pontos para desbloquear ofertas!',
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 20),
-
-              // Histórico de Pontos
-              const Text(
-                'Histórico de Pontos',
-                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              Card(
-                color: const Color(0xFF1A1A1A),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 4,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: _pointsHistory.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'Nenhum histórico disponível',
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                        )
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: _pointsHistory.length,
-                          itemBuilder: (context, index) {
-                            final entry = _pointsHistory[index];
-                            final date = (entry['date'] as Timestamp).toDate();
-                            final points = entry['points'] as int;
-                            final description = entry['description'] as String;
-                            return ListTile(
-                              leading: Icon(
-                                points > 0 ? Icons.add_circle : Icons.remove_circle,
-                                color: points > 0 ? Colors.green : Colors.red,
-                              ),
-                              title: Text(description, style: const TextStyle(color: Colors.white)),
-                              subtitle: Text(DateFormat('dd/MM/yyyy').format(date), style: const TextStyle(color: Colors.white70)),
-                              trailing: Text(
-                                '${points > 0 ? '+' : ''}$points pts',
-                                style: TextStyle(
-                                  color: points > 0 ? Colors.green : Colors.red,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Botão Final
-              Center(
-                child: ElevatedButton(
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) =>  BookingPage() )),
+              const SizedBox(height: 28),
+              _buildSectionLabel('PROGRAMA DE PONTOS'),
+              const SizedBox(height: 6),
+              const Text('Como funciona',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 14),
+              _buildHowItWorks(),
+              const SizedBox(height: 28),
+              _buildSectionLabel('ACTIVIDADE RECENTE'),
+              const SizedBox(height: 6),
+              const Text('Histórico',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 14),
+              _buildHistory(),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BookingPage())),
+                  icon: const Icon(Icons.content_cut, size: 16),
+                  label: const Text('Agendar e ganhar pontos', style: TextStyle(fontWeight: FontWeight.w600)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFB22222),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Agendar Agora e Ganhar Pontos', style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -386,4 +176,355 @@ class _PointsOffersPageState extends State<PointsOffersPage> {
       ),
     );
   }
+
+  AppBar _buildAppBar() {
+    return AppBar(
+      title: const Text('Pontos e Ofertas'),
+      backgroundColor: const Color(0xFF0D0D0D),
+      foregroundColor: Colors.white,
+      elevation: 0,
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(0.5),
+        child: Container(height: 0.5, color: Colors.white.withOpacity(0.06)),
+      ),
+    );
+  }
+
+  Widget _buildSectionLabel(String text) {
+    return Text(text,
+        style: const TextStyle(
+            color: Color(0xFFB22222), fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.w600));
+  }
+
+  Widget _buildPointsCard(double pts, double progress) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFB22222), Color(0xFF7a0000)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFB22222).withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Círculo decorativo
+          Positioned(
+            top: -40, right: -40,
+            child: Container(
+              width: 140, height: 140,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.05),
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Os teus pontos',
+                  style: TextStyle(color: Colors.white70, fontSize: 13)),
+              const SizedBox(height: 6),
+              Text(
+                pts.toStringAsFixed(0),
+                style: const TextStyle(color: Colors.white, fontSize: 56, fontWeight: FontWeight.w900, height: 1),
+              ),
+              const Text('pontos disponíveis',
+                  style: TextStyle(color: Colors.white70, fontSize: 13)),
+              const SizedBox(height: 20),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: progress.clamp(0.0, 1.0),
+                  backgroundColor: Colors.white.withOpacity(0.2),
+                  valueColor: const AlwaysStoppedAnimation(Colors.white),
+                  minHeight: 6,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('0 pts', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                  Text(
+                    '${pts.toStringAsFixed(0)} / $_nextLevelPoints pts',
+                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                  Text('$_nextLevelPoints pts', style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '$_agendamentosParaProximoNivel agendamento${_agendamentosParaProximoNivel == 1 ? '' : 's'} até ao próximo nível',
+                style: const TextStyle(color: Colors.white60, fontSize: 12),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOfferCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required int pts,
+    required double userPts,
+  }) {
+    final unlocked = userPts >= pts;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: unlocked ? 1.0 : 0.45,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: unlocked ? const Color(0xFFB22222).withOpacity(0.3) : Colors.white.withOpacity(0.06),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48, height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFB22222).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: const Color(0xFFB22222), size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 3),
+                    Text(subtitle,
+                        style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFB22222).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text('$pts pts',
+                          style: const TextStyle(color: Color(0xFFB22222), fontSize: 11, fontWeight: FontWeight.w600)),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              unlocked
+                  ? ElevatedButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const BookingPage()),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFB22222),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text('Usar', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                    )
+                  : Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: const Text('Bloqueado',
+                          style: TextStyle(color: Colors.white24, fontSize: 12, fontWeight: FontWeight.w500)),
+                    ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHowItWorks() {
+    final items = [
+      (Icons.calendar_today_outlined, 'Cada agendamento confirmado ganha +10 pontos'),
+      (Icons.euro_outlined, '100 pontos = 10% de desconto no próximo corte'),
+      (Icons.lock_open_outlined, 'Ofertas especiais desbloqueiam em níveis mais altos'),
+      (Icons.info_outline, 'O desconto é aplicado no momento do agendamento'),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Column(
+        children: items.asMap().entries.map((entry) {
+          final i = entry.key;
+          final item = entry.value;
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              border: i < items.length - 1
+                  ? Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05)))
+                  : null,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFB22222).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(item.$1, color: const Color(0xFFB22222), size: 18),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(item.$2,
+                      style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4)),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+Widget _buildHistory() {
+  if (_pointsHistory.isEmpty) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: const Center(
+        child: Column(
+          children: [
+            Icon(Icons.history_outlined, color: Colors.white24, size: 32),
+            SizedBox(height: 8),
+            Text('Sem actividade ainda.', style: TextStyle(color: Colors.white38, fontSize: 13)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  const collapsedCount = 4;
+  final hasMore = _pointsHistory.length > collapsedCount;
+  final visibleHistory = _historyExpanded ? _pointsHistory : _pointsHistory.take(collapsedCount).toList();
+
+  return Container(
+    decoration: BoxDecoration(
+      color: const Color(0xFF1A1A1A),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Colors.white.withOpacity(0.06)),
+    ),
+    child: Column(
+      children: [
+        ...visibleHistory.asMap().entries.map((entry) {
+          final i = entry.key;
+          final item = entry.value;
+          final rawPts = item['points'];
+          final pts = rawPts is int ? rawPts : (rawPts as double).toInt();
+          final isPositive = pts > 0;
+          final date = (item['date'] as Timestamp).toDate();
+          final desc = item['description'] as String? ?? '';
+          final isLastVisible = i == visibleHistory.length - 1;
+
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              border: (!isLastVisible || hasMore)
+                  ? Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05)))
+                  : null,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 8, height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isPositive ? Colors.greenAccent : Colors.redAccent,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(desc,
+                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 2),
+                      Text(DateFormat('dd MMM yyyy').format(date),
+                          style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                    ],
+                  ),
+                ),
+                Text(
+                  '${isPositive ? '+' : ''}$pts pts',
+                  style: TextStyle(
+                    color: isPositive ? Colors.greenAccent : Colors.redAccent,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+        if (hasMore)
+          InkWell(
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+            onTap: () => setState(() => _historyExpanded = !_historyExpanded),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _historyExpanded ? 'Ver menos' : 'Ver mais (${_pointsHistory.length - collapsedCount})',
+                    style: const TextStyle(
+                      color: Color(0xFFB22222),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    _historyExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                    color: const Color(0xFFB22222),
+                    size: 18,
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+}
 }

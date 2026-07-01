@@ -1,11 +1,9 @@
 // ignore_for_file: no_leading_underscores_for_local_identifiers, use_build_context_synchronously, unused_local_variable, unused_element
 
+import 'package:falcaobarbershopv2/main.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
-
-
 import 'package:firebase_auth/firebase_auth.dart';
 import '../controller/auth_controller.dart';
 import '../model/user_model.dart';
@@ -34,7 +32,6 @@ class _HomeUserState extends State<HomeUser> with SingleTickerProviderStateMixin
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late Animation<Offset> _heroImageFloatAnimation;
-  late Animation<double> _heroImageScaleAnimation;
 
 
   final TextEditingController _searchController = TextEditingController();
@@ -132,12 +129,6 @@ class _HomeUserState extends State<HomeUser> with SingleTickerProviderStateMixin
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
-    _heroImageScaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.03,
-    ).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
 
     // Verificar estado de autenticação
 
@@ -275,24 +266,29 @@ PreferredSizeWidget _buildAppBar(bool isMobile) {
       preferredSize: const Size.fromHeight(0.5),
       child: Container(height: 0.5, color: Colors.white.withOpacity(0.06)),
     ),
-    title: Row(
-      children: [
-        Container(
-          width: 40, height: 40,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+    title: GestureDetector(
+      onTap: (){
+        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) =>const HomeUser()));
+      },
+      child: Row(
+        children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.all(4),
+            child: Image.asset('assets/images/logo_falcao.png'),
           ),
-          padding: const EdgeInsets.all(4),
-          child: Image.asset('assets/images/logo_falcao.png'),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          _settings?.barbeariaNome ?? 'Falcão Barbershop',
-          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
+          const SizedBox(width: 10),
+          Text(
+            _settings?.barbeariaNome ?? 'Falcão Barbershop',
+            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
     ),
     actions: [
       if (!isMobile) ...[
@@ -306,6 +302,10 @@ PreferredSizeWidget _buildAppBar(bool isMobile) {
             child: const Text('Entrar', style: TextStyle(color: Colors.white70, fontSize: 13)),
           ),
         ] else ...[
+            TextButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AnonymousAppointmentsPage())),
+            child: const Text('Agendamentos', style: TextStyle(color: Colors.white70, fontSize: 13)),
+          ),
           TextButton(
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryPage())),
             child: const Text('Histórico', style: TextStyle(color: Colors.white70, fontSize: 13)),
@@ -371,11 +371,12 @@ Widget _buildDrawer() {
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AnonymousAppointmentsPage())),
           ),
           if (_currentUser != null) ...[
-            ListTile(
-              leading: const Icon(Icons.history_outlined, color: Colors.white54, size: 20),
-              title: const Text('Histórico', style: TextStyle(color: Colors.white)),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryPage())),
-            ),
+             ListTile(
+            leading: const Icon(Icons.calendar_today_outlined, color: Colors.white54, size: 20),
+            title: const Text('Histórico', style: TextStyle(color: Colors.white)),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryPage())),
+          ),
+          
             ListTile(
               leading: const Icon(Icons.star_outline, color: Colors.white54, size: 20),
               title: const Text('Pontos e Ofertas', style: TextStyle(color: Colors.white)),
@@ -416,6 +417,7 @@ Widget _buildDrawer() {
                     ),
                   ),
                 ] else ...[
+                  
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
