@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:falcaobarbershopv2/main.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../controller/auth_controller.dart';
@@ -112,46 +113,51 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+Future<void> _submit() async {
+  if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  setState(() {
+    _isLoading = true;
+    _errorMessage = null;
+  });
 
-    try {
-      if (_isLogin) {
-        final UserModel? user = await _authController.loginUser(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        );
-        if (user != null) {
-          Navigator.of(context).pop();
-        }
-      } else {
-        final UserModel? user = await _authController.registerUser(
-          name: _nameController.text.trim(),
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-          phone: _phoneController.text.trim(),
-          city: _selectedCity ?? '',
-        );
-        if (user != null) {
-          Navigator.of(context).pop();
-        }
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = e is FirebaseAuthException
-            ? _mapFirebaseError(e)
-            : 'Não foi possível concluir. Tente novamente.';
-      });
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+  try {
+    UserModel? user;
+    if (_isLogin) {
+      user = await _authController.loginUser(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+    } else {
+      user = await _authController.registerUser(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        phone: _phoneController.text.trim(),
+        city: _selectedCity ?? '',
+      );
     }
-  }
 
+    if (user != null && mounted) {
+      // Volta ao AuthWrapper que já existe na raiz da app (home do
+      // MaterialApp) em vez de empilhar uma instância nova. O AuthWrapper
+      // raiz já está subscrito ao userStream há mais tempo, por isso não
+      // depende de "apanhar" o próximo evento do stream — evita a tela
+      // presa em loading que acontecia com pushAndRemoveUntil.
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+  } catch (e) {
+    setState(() {
+      _errorMessage = e is FirebaseAuthException
+          ? _mapFirebaseError(e)
+          : 'Não foi possível concluir. Tente novamente.';
+    });
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
+  }
+}
+ 
+ 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
