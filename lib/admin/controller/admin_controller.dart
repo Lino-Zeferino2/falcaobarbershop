@@ -390,12 +390,8 @@ class AdminController {
             final userDoc = await _firestore.collection('clientes').doc(data['userId']).get();
             if (userDoc.exists) {
               final userData = userDoc.data() as Map<String, dynamic>;
-              final currentPoints = (userData['points'] ?? 0.0).toDouble();
-              if (currentPoints < 100) {
-                await _firestore.collection('clientes').doc(data['userId']).update({
-                  'points': currentPoints + 10,
-                });
-              }
+              (userData['points'] ?? 0.0).toDouble();
+          
             }
           }
         }
