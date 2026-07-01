@@ -7,6 +7,7 @@ import 'package:falcaobarbershopv2/user/pages/history_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'firebase_options.dart';
 
@@ -17,8 +18,10 @@ import 'professional/pages/home_professional_page.dart';
 import 'user/controller/auth_controller.dart';
 import 'user/model/user_model.dart';
 
-void main() async {
+Future<void> main() async {
+  
   WidgetsFlutterBinding.ensureInitialized();
+   await initializeDateFormatting('pt_BR', null);
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
