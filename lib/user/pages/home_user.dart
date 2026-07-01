@@ -822,81 +822,91 @@ final randomServices = services.take(3).toList();
                   if (services.isEmpty) return const SizedBox.shrink();
 
                   return GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: isMobile ? 1 : 3,
-                      crossAxisSpacing: 14,
-                      mainAxisSpacing: 14,
-                      childAspectRatio: isMobile ? 2.5 : 1.1,
+  shrinkWrap: true,
+  physics: const NeverScrollableScrollPhysics(),
+  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+    crossAxisCount: isMobile ? 1 : 3,
+    crossAxisSpacing: 14,
+    mainAxisSpacing: 14,
+    childAspectRatio: isMobile ? 2.5 : 1.1,
+  ),
+  itemCount: randomServices.length,
+  itemBuilder: (context, index) {
+    final s = randomServices[index];
+    return GestureDetector(
+      onTap: () => Navigator.push(context, MaterialPageRoute(
+          builder: (_) => BookingPage(selectedService: {
+            'nome': s.nome, 'preco': s.preco, 'duracao': s.duracao,
+          }))),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.07)),
+        ),
+        child: isMobile
+            ? Row(
+                children: [
+                  Container(
+                    width: 48, height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFB22222).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                 itemCount: randomServices.length,
-                    itemBuilder: (context, index) {
-                     final s = randomServices[index];
-                      return GestureDetector(
-                        onTap: () => Navigator.push(context, MaterialPageRoute(
-                            builder: (_) => BookingPage(selectedService: {
-                              'nome': s.nome, 'preco': s.preco, 'duracao': s.duracao,
-                            }))),
-                        child: Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1A1A1A),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white.withOpacity(0.07)),
-                          ),
-                          child: isMobile
-                              ? Row(
-                                  children: [
-                                    Container(
-                                      width: 48, height: 48,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFB22222).withOpacity(0.12),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: const Icon(Icons.content_cut, color: Color(0xFFB22222), size: 22),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Text(s.nome, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
-                                          const SizedBox(height: 4),
-                                          Text('${s.duracao} min', style: const TextStyle(color: Colors.white38, fontSize: 12)),
-                                        ],
-                                      ),
-                                    ),
-                                    Text('€${s.preco.toStringAsFixed(0)}',
-                                        style: const TextStyle(color: Color(0xFFB22222), fontSize: 20, fontWeight: FontWeight.w800)),
-                                  ],
-                                )
-                              : Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      width: 44, height: 44,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFB22222).withOpacity(0.12),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: const Icon(Icons.content_cut, color: Color(0xFFB22222), size: 20),
-                                    ),
-                                    const SizedBox(height: 14),
-                                    Text(s.nome, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600), maxLines: 2),
-                                    const SizedBox(height: 4),
-                                    Text('${s.duracao} min', style: const TextStyle(color: Colors.white38, fontSize: 12)),
-                                    const Spacer(),
-                                    Text('€${s.preco.toStringAsFixed(0)}',
-                                        style: const TextStyle(color: Color(0xFFB22222), fontSize: 24, fontWeight: FontWeight.w800)),
-                                  ],
-                                ),
+                    child: const Icon(Icons.content_cut, color: Color(0xFFB22222), size: 22),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          s.nome,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
                         ),
-                      );
-                    },
-                  );
-                },
+                        const SizedBox(height: 4),
+                        Text('${s.duracao} min', style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text('€${s.preco.toStringAsFixed(0)}',
+                      style: const TextStyle(color: Color(0xFFB22222), fontSize: 20, fontWeight: FontWeight.w800)),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 44, height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFB22222).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.content_cut, color: Color(0xFFB22222), size: 20),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    s.nome,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text('${s.duracao} min', style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                  const Spacer(),
+                  Text('€${s.preco.toStringAsFixed(0)}',
+                      style: const TextStyle(color: Color(0xFFB22222), fontSize: 24, fontWeight: FontWeight.w800)),
+                ],
+              ),
+      ),
+    );
+  },
+);},
               ),
             ],
           ),

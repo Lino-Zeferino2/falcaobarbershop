@@ -3,11 +3,21 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter/foundation.dart';
 
-
 import '../../admin/controller/admin_controller.dart';
 import '../../admin/model/post_model.dart';
 import '../../admin/model/settings_model.dart';
 import 'booking_page.dart';
+
+// Mesma paleta usada nas demais telas do app.
+class _Palette {
+  static const background = Color(0xFF0B0B0D);
+  static const surface = Color(0xFF161617);
+  static const surfaceLight = Color(0xFF1F1F21);
+  static const primary = Color(0xFFB22222);
+  static const primaryDark = Color(0xFF8C1A1A);
+  static const textPrimary = Colors.white;
+  static const textSecondary = Color(0xFFA8A8AC);
+}
 
 class PortfolioWorksPage extends StatefulWidget {
   const PortfolioWorksPage({super.key});
@@ -19,8 +29,16 @@ class PortfolioWorksPage extends StatefulWidget {
 class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
   final ScrollController _scrollController = ScrollController();
 
-  // Controle de play/pause por card
+  // Controle de play/pause por card de vídeo.
   late final List<ValueNotifier<bool>> _videoIsPlaying;
+
+  // Vídeos exibidos tanto no mobile quanto na Web.
+  static const List<String> _videoSlugs = [
+    'afro-elite.mp4',
+    'corte-classico.mp4',
+    'degrade.mp4',
+    'limpeza-facial.mp4',
+  ];
 
   @override
   void initState() {
@@ -40,38 +58,7 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
     super.dispose();
   }
 
-  // Contador simples pra garantir que o index bate com o card renderizado
-
-  // Vídeos (nomes/slug) usados tanto no mobile quanto no Web.
-  // No Web vamos apontar para o caminho público do arquivo.
-  final List<String> _videoSlugs = const [
-    'afro-elite.mp4',
-    'corte-classico.mp4',
-    'degrade.mp4',
-    'limpeza-facial.mp4',
-  ];
-
-
-
   Future<SettingsModel?> _loadSettings() => AdminController().getSettings();
-
-  // dispose removido (já existe outro override ao final do estado)
-
-
-  Widget _sectionTitle(String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.4,
-        ),
-      ),
-    );
-  }
 
   String _prettyVideoTitle(String assetPath) {
     final file = assetPath.split('/').last;
@@ -82,79 +69,122 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
         .replaceFirstMapped(RegExp(r'^(.)'), (m) => m.group(1)!.toUpperCase());
   }
 
+  Widget _sectionTitle(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: _Palette.primary.withOpacity(0.14),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: _Palette.primary, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _videoCard(String assetPath, {required int index}) {
     return GestureDetector(
-      onTap: () => _openVideoFullscreen(
-  context, 
-  assetPath, 
-  _prettyVideoTitle(assetPath),  // ← passa o título aqui
-),
+      onTap: () => _openVideoFullscreen(context, assetPath, _prettyVideoTitle(assetPath)),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF161616),
-            border: Border.all(color: const Color(0xFFB22222).withOpacity(0.35)),
+            color: _Palette.surface,
+            border: Border.all(color: _Palette.primary.withOpacity(0.3)),
           ),
-          child:Stack(
-        fit: StackFit.expand,
-        children: [
-                _LocalVideoPlayer(
-                  assetPath: assetPath,
-                  isPlaying: _videoIsPlaying[index],
-                  onPlayerReady: () {},
-                ),
-                const Positioned(
-                  left: 16,
-                  top: 16,
-                  child: Chip(
-                    backgroundColor: Color(0xFFB22222),
-                    labelStyle: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                    avatar: Icon(Icons.play_arrow, color: Colors.white),
-                    label: Text('Vídeo'),
-                  ),
-                ),
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withOpacity(0.05),
-                          Colors.black.withOpacity(0.45),
-                        ],
-                      ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _LocalVideoPlayer(
+                assetPath: assetPath,
+                isPlaying: _videoIsPlaying[index],
+                onPlayerReady: () {},
+              ),
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.05),
+                        Colors.black.withOpacity(0.5),
+                      ],
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Align(
-                    alignment: Alignment.bottomLeft,
-                    child: Text(
-                      _prettyVideoTitle(assetPath),
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.92),
-                        fontWeight: FontWeight.w700,
-                        fontSize: MediaQuery.of(context).size.width > 600 ? 16 : 14,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withOpacity(0.7),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          )
-                        ],
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+              ),
+              Positioned(
+                left: 14,
+                top: 14,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _Palette.primary,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(color: _Palette.primary.withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 3)),
+                    ],
                   ),
-                )
-              ],
-            ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.play_arrow_rounded, color: Colors.white, size: 16),
+                      SizedBox(width: 4),
+                      Text('Vídeo', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 14,
+                top: 14,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.45),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.fullscreen_rounded, color: Colors.white, size: 18),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Align(
+                  alignment: Alignment.bottomLeft,
+                  child: Text(
+                    _prettyVideoTitle(assetPath),
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.95),
+                      fontWeight: FontWeight.w700,
+                      fontSize: MediaQuery.of(context).size.width > 600 ? 16 : 14,
+                      shadows: [
+                        Shadow(color: Colors.black.withOpacity(0.7), blurRadius: 8, offset: const Offset(0, 2)),
+                      ],
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ],
           ),
-        
+        ),
       ),
     );
   }
@@ -171,18 +201,13 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF0D0D0D),
-                Color(0xFF0B0B0B),
-              ],
+              colors: [_Palette.surfaceLight, _Palette.background],
             ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 10),
-       
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
@@ -190,7 +215,7 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: isDesktop ? 44 : 24,
+                    fontSize: isDesktop ? 44 : 26,
                     fontWeight: FontWeight.w900,
                     height: 1.05,
                     letterSpacing: 0.2,
@@ -199,23 +224,20 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
               ),
               const SizedBox(height: 14),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
                   settings?.subDescricao ??
                       'Confira alguns dos nossos cortes e serviços — do clássico ao degradê perfeito.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.72),
+                    color: _Palette.textSecondary,
                     fontSize: isDesktop ? 18 : 15,
                     height: 1.5,
                   ),
                 ),
               ),
-              const SizedBox(height: 18),
-              Divider(
-                color: Colors.white.withOpacity(0.10),
-                thickness: 1,
-              ),
+              const SizedBox(height: 20),
+              Divider(color: Colors.white.withOpacity(0.08), thickness: 1, height: 1),
             ],
           ),
         ),
@@ -228,16 +250,12 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
                   bottomRight: Radius.circular(18),
                 ),
                 boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFB22222).withOpacity(0.10),
-                    blurRadius: 40,
-                    spreadRadius: 10,
-                  ),
+                  BoxShadow(color: _Palette.primary.withOpacity(0.1), blurRadius: 40, spreadRadius: 10),
                 ],
               ),
             ),
           ),
-        )
+        ),
       ],
     );
   }
@@ -245,15 +263,13 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    // debug: força o refresh visual para confirmar render
-
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: _Palette.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D0D0D),
+        backgroundColor: _Palette.background,
         elevation: 0,
-        title: const Text('Nossos Trabalhos'),
+        title: const Text('Nossos Trabalhos', style: TextStyle(fontWeight: FontWeight.w700)),
         centerTitle: false,
         foregroundColor: Colors.white,
       ),
@@ -263,7 +279,9 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
           final settings = settingsSnap.data;
 
           if (settingsSnap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(color: _Palette.primary, strokeWidth: 2.6),
+            );
           }
 
           return CustomScrollView(
@@ -274,47 +292,42 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
               // Vídeos
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _sectionTitle('Vídeos'),
-                      const Text(
-                        'Selecionamos nossos melhores momentos para você sentir a diferença.',
-                        style: TextStyle(color: Colors.white70, fontSize: 14),
+                      _sectionTitle(Icons.movie_creation_outlined, 'Vídeos'),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 48, top: 4, bottom: 16),
+                        child: Text(
+                          'Selecionámos os nossos melhores momentos para sentir a diferença.',
+                          style: TextStyle(color: _Palette.textSecondary, fontSize: 14),
+                        ),
                       ),
-                      const SizedBox(height: 14),
-                          LayoutBuilder(
+                      LayoutBuilder(
                         builder: (context, constraints) {
                           final isDesktop = constraints.maxWidth > 900;
-                          // Cards mais largos/altos: menos colunas
                           final crossAxisCount = isDesktop ? 3 : 2;
 
-                          return  GridView.builder(
-  shrinkWrap: true,
-  physics: const NeverScrollableScrollPhysics(),
-  itemCount: _videoSlugs.length,
-  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-    crossAxisCount: crossAxisCount,
-    crossAxisSpacing: 12,
-    mainAxisSpacing: 12,
-    childAspectRatio: isDesktop ? 1.4 : 0.55,
-  ),
+                          return GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _videoSlugs.length,
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: crossAxisCount,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: isDesktop ? 1.4 : 0.55,
+                            ),
                             itemBuilder: (context, index) {
                               final slug = _videoSlugs[index];
-                              final assetPath = kIsWeb 
-    ? 'videos/$slug'  // path relativo na pasta web/
-    : 'assets/videos/$slug';  // path local para mobile
-
-                              return _videoCard(
-                                assetPath,
-                                index: index,
-                              );
+                              final assetPath = kIsWeb ? 'videos/$slug' : 'assets/videos/$slug';
+                              return _videoCard(assetPath, index: index);
                             },
                           );
                         },
                       ),
-                      const SizedBox(height: 26),
+                      const SizedBox(height: 30),
                     ],
                   ),
                 ),
@@ -327,51 +340,44 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _sectionTitle('Fotos'),
-                      const Text(
-                        'Imagens reais do nosso trabalho.',
-                        style: TextStyle(color: Colors.white70, fontSize: 14),
+                      _sectionTitle(Icons.photo_camera_back_outlined, 'Fotos'),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 48, top: 4, bottom: 16),
+                        child: Text(
+                          'Imagens reais do nosso trabalho.',
+                          style: TextStyle(color: _Palette.textSecondary, fontSize: 14),
+                        ),
                       ),
-                      const SizedBox(height: 14),
                       StreamBuilder<List<PostModel>>(
                         stream: AdminController().getAllPosts(),
                         builder: (context, snapshot) {
                           if (snapshot.connectionState == ConnectionState.waiting) {
                             return const Padding(
                               padding: EdgeInsets.symmetric(vertical: 30),
-                              child: Center(child: CircularProgressIndicator()),
+                              child: Center(
+                                child: CircularProgressIndicator(color: _Palette.primary, strokeWidth: 2.6),
+                              ),
                             );
                           }
                           if (snapshot.hasError) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 30),
-                              child: Text(
-                                'Erro ao carregar fotos.',
-                                style: TextStyle(color: Colors.white70),
-                              ),
-                            );
-                          }
-                          final posts = snapshot.data ?? [];
-                          debugPrint('[PortfolioWorksPage] hasError=${snapshot.hasError}');
-                          debugPrint('[PortfolioWorksPage] postsCount=${posts.length}');
-                          if (posts.isNotEmpty) {
-                            debugPrint('[PortfolioWorksPage] first.imageUrl=${posts.first.imageUrl}');
-                          }
-                          if (posts.isEmpty) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 30),
-                              child: Text(
-                                'Nenhuma foto disponível no momento.',
-                                style: TextStyle(color: Colors.white70),
-                              ),
+                            return const _InlineMessage(
+                              icon: Icons.error_outline_rounded,
+                              text: 'Erro ao carregar fotos.',
                             );
                           }
 
+                          final posts = snapshot.data ?? [];
+
+                          if (posts.isEmpty) {
+                            return const _InlineMessage(
+                              icon: Icons.photo_library_outlined,
+                              text: 'Nenhuma foto disponível no momento.',
+                            );
+                          }
 
                           return LayoutBuilder(
                             builder: (context, constraints) {
                               final isDesktop = constraints.maxWidth > 900;
-                              // Fotos mais amplas e menos colunas
                               final crossAxisCount = isDesktop ? 3 : 2;
 
                               return GridView.builder(
@@ -379,79 +385,14 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
                                 physics: const NeverScrollableScrollPhysics(),
                                 itemCount: posts.length,
                                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-    crossAxisCount: crossAxisCount,
-    crossAxisSpacing: 12,
-    mainAxisSpacing: 12,
-    childAspectRatio: isDesktop ? 1.4 : 0.55,
-  ),
+                                  crossAxisCount: crossAxisCount,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 12,
+                                  childAspectRatio: isDesktop ? 1.4 : 0.55,
+                                ),
                                 itemBuilder: (context, index) {
                                   final post = posts[index];
-                                  final url = post.imageUrl;
-
-                                  return ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: const Color(0xFFB22222).withOpacity(0.25),
-                                        ),
-                                        color: const Color(0xFF161616),
-                                      ),
-                                      child: url == null || url.trim().isEmpty
-                                          ? const Center(
-                                              child: Icon(
-                                                Icons.image_not_supported_outlined,
-                                                color: Colors.white54,
-                                              ),
-                                            )
-                                          : Stack(
-                                              fit: StackFit.expand,
-                                              children: [
-                                                Image.network(
-                                                  url,
-                                                  fit: BoxFit.cover,
-                                                  loadingBuilder: (context, child, loadingProgress) {
-                                                    if (loadingProgress == null) return child;
-                                                    return const Center(
-                                                      child: CircularProgressIndicator(
-                                                        strokeWidth: 2,
-                                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                                          Color(0xFFB22222),
-                                                        ),
-                                                      ),
-                                                    );
-                                                  },
-                                                  errorBuilder: (context, error, stackTrace) {
-                                                    debugPrint('[PortfolioWorksPage] Image.network error: url=$url error=$error');
-                                                    return const Center(
-                                                      child: Icon(
-                                                        Icons.broken_image_outlined,
-                                                        color: Colors.white54,
-                                                      ),
-                                                    );
-                                                  },
-                                                ),
-
-
-
-                                                Positioned.fill(
-                                                  child: DecoratedBox(
-                                                    decoration: BoxDecoration(
-                                                      gradient: LinearGradient(
-                                                        begin: Alignment.topCenter,
-                                                        end: Alignment.bottomCenter,
-                                                        colors: [
-                                                          Colors.black.withOpacity(0.0),
-                                                          Colors.black.withOpacity(0.35),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                    ),
-                                  );
+                                  return _PhotoCard(imageUrl: post.imageUrl);
                                 },
                               );
                             },
@@ -459,21 +400,21 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
                         },
                       ),
 
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 34),
                       Align(
                         alignment: Alignment.center,
                         child: Text(
                           user == null
-                              ? 'Logue para agendar e acompanhar seu histórico.'
-                              : 'Pronto para agendar? Mostre seu estilo!',
+                              ? 'Inicie sessão para agendar e acompanhar o seu histórico.'
+                              : 'Pronto para agendar? Mostre o seu estilo!',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.65),
+                            color: _Palette.textSecondary,
                             fontSize: MediaQuery.of(context).size.width > 600 ? 16 : 14,
                           ),
                           textAlign: TextAlign.center,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                       Center(
                         child: ElevatedButton.icon(
                           onPressed: () {
@@ -487,18 +428,17 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
                             );
                           },
                           icon: const Icon(Icons.calendar_month_outlined),
-                          label: const Text('Agendar'),
+                          label: const Text('Agendar', style: TextStyle(fontWeight: FontWeight.w700)),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFB22222),
+                            backgroundColor: _Palette.primary,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
@@ -506,6 +446,91 @@ class _PortfolioWorksPageState extends State<PortfolioWorksPage> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+// ---------- Componentes ----------
+
+class _InlineMessage extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _InlineMessage({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 30),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(icon, color: _Palette.textSecondary, size: 30),
+            const SizedBox(height: 10),
+            Text(text, style: const TextStyle(color: _Palette.textSecondary, fontSize: 14)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PhotoCard extends StatelessWidget {
+  final String? imageUrl;
+  const _PhotoCard({required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final url = imageUrl;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: _Palette.primary.withOpacity(0.22)),
+          color: _Palette.surface,
+        ),
+        child: (url == null || url.trim().isEmpty)
+            ? const Center(
+                child: Icon(Icons.image_not_supported_outlined, color: _Palette.textSecondary),
+              )
+            : Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(
+                    url,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(_Palette.primary),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      debugPrint('[PortfolioWorksPage] Image.network error: url=$url error=$error');
+                      return const Center(
+                        child: Icon(Icons.broken_image_outlined, color: _Palette.textSecondary),
+                      );
+                    },
+                  ),
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withOpacity(0.0),
+                            Colors.black.withOpacity(0.35),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -534,7 +559,7 @@ class _LocalVideoPlayerState extends State<_LocalVideoPlayer> {
   void initState() {
     super.initState();
 
-    _controller =  VideoPlayerController.networkUrl(Uri.parse(widget.assetPath))
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.assetPath))
       ..setLooping(true)
       ..setVolume(0);
 
@@ -553,7 +578,6 @@ class _LocalVideoPlayerState extends State<_LocalVideoPlayer> {
 
       setState(() => _ready = true);
       widget.onPlayerReady();
-
       _syncPlayback();
     }).catchError((e) {
       if (!mounted) return;
@@ -582,54 +606,41 @@ class _LocalVideoPlayerState extends State<_LocalVideoPlayer> {
     super.dispose();
   }
 
-
-@override
-Widget build(BuildContext context) {
-  if (!_ready) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFB22222),
-            Color(0xFF0D0D0D),
-          ],
+  @override
+  Widget build(BuildContext context) {
+    if (!_ready) {
+      return Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [_Palette.primary, _Palette.background],
+          ),
         ),
-      ),
-      child: const Center(
-        child: Icon(
-          Icons.videocam_rounded,
-          size: 56,
-          color: Colors.white70,
+        child: const Center(
+          child: Icon(Icons.videocam_rounded, size: 48, color: Colors.white70),
+        ),
+      );
+    }
+
+    return ClipRect(
+      child: OverflowBox(
+        maxWidth: double.infinity,
+        maxHeight: double.infinity,
+        child: FittedBox(
+          fit: BoxFit.none,
+          child: SizedBox(
+            width: _controller!.value.size.width,
+            height: _controller!.value.size.height,
+            child: VideoPlayer(_controller!),
+          ),
         ),
       ),
     );
   }
-
-  return ClipRect(
-    child: OverflowBox(
-      maxWidth: double.infinity,
-      maxHeight: double.infinity,
-      child: FittedBox(
-        fit: BoxFit.none,
-        child: SizedBox(
-          width: _controller!.value.size.width,
-          height: _controller!.value.size.height,
-          child: VideoPlayer(_controller!),
-        ),
-      ),
-    ),
-  );
 }
 
-
-
-
-
-
-}
-void _openVideoFullscreen(BuildContext context, String assetPath, String title)  {
+void _openVideoFullscreen(BuildContext context, String assetPath, String title) {
   showDialog(
     context: context,
     barrierColor: Colors.black.withOpacity(0.95),
@@ -637,15 +648,13 @@ void _openVideoFullscreen(BuildContext context, String assetPath, String title) 
       backgroundColor: Colors.black,
       child: Stack(
         children: [
-          Center(
-            child: _FullscreenVideoPlayer(assetPath: assetPath),
-          ),
+          Center(child: _FullscreenVideoPlayer(assetPath: assetPath)),
           Positioned(
             top: 40,
             right: 16,
             child: IconButton(
               onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.close, color: Colors.white, size: 32),
+              icon: const Icon(Icons.close, color: Colors.white, size: 28),
               style: IconButton.styleFrom(
                 backgroundColor: Colors.black54,
                 shape: const CircleBorder(),
@@ -659,11 +668,7 @@ void _openVideoFullscreen(BuildContext context, String assetPath, String title) 
             child: Center(
               child: Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
               ),
             ),
           ),
@@ -672,6 +677,7 @@ void _openVideoFullscreen(BuildContext context, String assetPath, String title) 
     ),
   );
 }
+
 class _FullscreenVideoPlayer extends StatefulWidget {
   final String assetPath;
   const _FullscreenVideoPlayer({required this.assetPath});
@@ -681,7 +687,7 @@ class _FullscreenVideoPlayer extends StatefulWidget {
 }
 
 class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer> {
-  late VideoPlayerController _controller;
+  late final VideoPlayerController _controller;
   bool _ready = false;
   bool _playing = true;
 
@@ -731,10 +737,7 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer> {
             opacity: _playing ? 0.0 : 1.0,
             duration: const Duration(milliseconds: 200),
             child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.black54,
-                shape: BoxShape.circle,
-              ),
+              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
               padding: const EdgeInsets.all(16),
               child: const Icon(Icons.play_arrow, color: Colors.white, size: 48),
             ),
@@ -744,4 +747,3 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer> {
     );
   }
 }
-
