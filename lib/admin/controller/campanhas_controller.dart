@@ -210,4 +210,96 @@ class CampanhasController {
       };
     }
   }
+  /// Versão em lote de getEnvioStatsPorCliente — busca os envios de TODOS os
+/// clientes fornecidos numa única passagem de queries (em grupos de 10,
+/// limite do whereIn), em vez de 1 query por cliente. Devolve um mapa
+/// clienteId -> {qtdEnvios, ultimoEnvioAt}, no mesmo formato do método
+/// original, para servir de substituto direto em código que itera clientes.
+Future<Map<String, Map<String, dynamic>>> getEnvioStatsPorClientes(
+  List<String> clienteIds,
+) async {
+  final result = <String, Map<String, dynamic>>{};
+  if (clienteIds.isEmpty) return result;
+
+  try {
+    // Agrupa todos os docs de campanha_envios por clienteId primeiro.
+    final Map<String, List<Map<String, dynamic>>> enviosPorCliente = {};
+
+    const batchSize = 10;
+    final batches = <Future<void>>[];
+
+    for (var i = 0; i < clienteIds.length; i += batchSize) {
+      final end = (i + batchSize < clienteIds.length) ? i + batchSize : clienteIds.length;
+      final batchIds = clienteIds.sublist(i, end);
+
+      batches.add(
+        _firestore
+            .collection('campanha_envios')
+            .where('clienteId', whereIn: batchIds)
+            .get()
+            .then((snap) {
+          for (final doc in snap.docs) {
+            final data = doc.data();
+            final clienteId = data['clienteId'] as String?;
+            if (clienteId == null) continue;
+            enviosPorCliente.putIfAbsent(clienteId, () => []).add(data);
+          }
+        }),
+      );
+    }
+
+    await Future.wait(batches);
+
+    // Para cada cliente, replica exatamente a lógica original:
+    // encontra o último envio e conta quantos envios pertencem à mesma
+    // campanha desse último envio.
+    for (final clienteId in clienteIds) {
+      final docs = enviosPorCliente[clienteId] ?? [];
+
+      DateTime? ultimoAt;
+      String? ultimaCampanhaId;
+
+      for (final data in docs) {
+        final sentAtValue = data['sentAt'];
+        DateTime? sentAt;
+        if (sentAtValue is Timestamp) {
+          sentAt = sentAtValue.toDate();
+        } else if (sentAtValue is String) {
+          try {
+            sentAt = DateTime.parse(sentAtValue);
+          } catch (_) {}
+        }
+
+        final campanhaId = (data['campanhaId'] ?? '') as String;
+        if (sentAt != null && (ultimoAt == null || sentAt.isAfter(ultimoAt))) {
+          ultimoAt = sentAt;
+          ultimaCampanhaId = campanhaId;
+        }
+      }
+
+      if (ultimaCampanhaId == null || ultimoAt == null) {
+        result[clienteId] = {'qtdEnvios': 0, 'ultimoEnvioAt': null};
+        continue;
+      }
+
+      final qtdParaUltimaCampanha = docs.where((data) {
+        final campanhaId = (data['campanhaId'] ?? '') as String;
+        return campanhaId == ultimaCampanhaId;
+      }).length;
+
+      result[clienteId] = {
+        'qtdEnvios': qtdParaUltimaCampanha,
+        'ultimoEnvioAt': ultimoAt,
+      };
+    }
+
+    return result;
+  } catch (e) {
+    if (kDebugMode) {
+      print('Error getEnvioStatsPorClientes: $e');
+    }
+    return result;
+  }
+}
+
 }

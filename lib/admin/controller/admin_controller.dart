@@ -1,3 +1,5 @@
+// ignore_for_file: invalid_return_type_for_catch_error
+
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';

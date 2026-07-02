@@ -48,98 +48,124 @@ class RetencaoClientesController {
     return snapshot.docs.length;
   }
 
-  Future<List<RetencaoClientesItem>> getRetencaoClientes({
-    required int minMonthsSinceLastAppointment,
-  }) async {
-    final clientesSnapshot = await _firestore
-        .collection('clientes')
-        .where('role', isEqualTo: 'cliente')
-        .get();
+ Future<List<RetencaoClientesItem>> getRetencaoClientes({
+  required int minMonthsSinceLastAppointment,
+}) async {
+  final clientesSnapshot = await _firestore
+      .collection('clientes')
+      .where('role', isEqualTo: 'cliente')
+      .get();
 
-    final clientes = clientesSnapshot.docs
-        .map((d) => UserModel.fromMap(d.data()))
-        .toList();
+  final clientes = clientesSnapshot.docs
+      .map((d) => UserModel.fromMap(d.data()))
+      .toList();
 
-    if (clientes.isEmpty) return [];
+  if (clientes.isEmpty) return [];
 
-    final items = <RetencaoClientesItem>[];
+  final clienteIds = clientes.map((c) => c.uid).toList();
 
-    await Future.wait(clientes.map((cliente) async {
-      final lastAppt = await _adminController.getClienteLastAppointment(cliente.uid);
+  // 1 pedido em lote (por grupos de 10, limite do whereIn) para TODOS os
+  // agendamentos de TODOS os clientes de uma vez, em vez de 3 queries
+  // separadas por cliente (último agendamento, contagem, total gasto).
+  final Map<String, List<Map<String, dynamic>>> agendamentosPorCliente = {};
+  const batchSize = 10;
+  final batches = <Future<void>>[];
 
-      final monthsSince = _adminController.getMonthsSinceLastAppointment(lastAppt?.dateTime);
+  for (var i = 0; i < clienteIds.length; i += batchSize) {
+    final end = (i + batchSize < clienteIds.length) ? i + batchSize : clienteIds.length;
+    final batchIds = clienteIds.sublist(i, end);
 
-      // monthsSince == -1 when no appointment; for inactivity filters we don't include those by default
-      if (monthsSince < minMonthsSinceLastAppointment) return;
-
-      final totalAgendamentos = await _adminController.getClienteAppointmentsCount(cliente.uid);
-      final totalGasto = await _calculateTotalGastoCompleted(cliente.uid);
-
-      final envioStats = await _campanhasController.getEnvioStatsPorCliente(cliente.uid);
-
-      final qtdEnviosRaw = envioStats['qtdEnvios'];
-      final qtdEnvios = qtdEnviosRaw is num ? qtdEnviosRaw.toInt() : 0;
-
-      final ultimoEnvioRaw = envioStats['ultimoEnvioAt'];
-      final ultimoEnvioAt = ultimoEnvioRaw is DateTime ? ultimoEnvioRaw : null;
-
-      items.add(
-        RetencaoClientesItem(
-          clienteId: cliente.uid,
-          nome: cliente.name,
-          email: cliente.email,
-          telemovel: cliente.phone,
-          totalAgendamentos: totalAgendamentos,
-          totalGasto: totalGasto,
-          ultimoAgendamento: lastAppt?.dateTime,
-          qtdEnviosCampanha: qtdEnvios,
-          ultimoEnvioAt: ultimoEnvioAt,
-        ),
-      );
-    }));
-
-    // Sort by "ultimoAgendamento mais antigo" (maior retenção)
-    items.sort((a, b) {
-      final aDate = a.ultimoAgendamento;
-      final bDate = b.ultimoAgendamento;
-
-      if (aDate == null && bDate == null) return 0;
-      if (aDate == null) return -1;
-      if (bDate == null) return 1;
-
-      return aDate.compareTo(bDate);
-    });
-
-    return items;
-  }
-
-  Future<double> _calculateTotalGastoCompleted(String clienteId) async {
-    try {
-      final query = await _firestore
+    batches.add(
+      _firestore
           .collection('agendamentos')
-          .where('userId', isEqualTo: clienteId)
-          .where('status', isEqualTo: 'completed')
-          .get();
-
-      double total = 0.0;
-
-      for (final doc in query.docs) {
-        final data = doc.data();
-        final priceValue = data['price'];
-
-        if (priceValue is num) {
-          total += priceValue.toDouble();
-        } else if (priceValue is String) {
-          total += double.tryParse(priceValue) ?? 0.0;
+          .where('userId', whereIn: batchIds)
+          .get()
+          .then((snap) {
+        for (final doc in snap.docs) {
+          final data = doc.data();
+          final userId = data['userId'] as String?;
+          if (userId == null) continue;
+          agendamentosPorCliente.putIfAbsent(userId, () => []).add(data);
         }
-      }
-
-      return total;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error calculating total gasto for clienteId=$clienteId: $e');
-      }
-      return 0.0;
-    }
+      }).catchError((e) {
+        if (kDebugMode) print('Error fetching agendamentos batch: $e');
+      }),
+    );
   }
+
+  await Future.wait(batches);
+
+  final items = <RetencaoClientesItem>[];
+// Busca todos os stats de campanha de uma vez, em vez de 1 query por
+// cliente dentro do loop abaixo.
+final envioStatsPorCliente = await _campanhasController.getEnvioStatsPorClientes(clienteIds);
+// Todas as fontes de dados (agendamentos e campanhas) já foram buscadas em
+// lote acima — este loop é só processamento em memória.
+  await Future.wait(clientes.map((cliente) async {
+    final agendamentos = agendamentosPorCliente[cliente.uid] ?? [];
+
+    // Último agendamento: maior data entre todos os agendamentos do cliente
+    // (qualquer status), replicando o comportamento original.
+    DateTime? lastApptDate;
+    for (final data in agendamentos) {
+      final dateStr = data['date'] as String?;
+      if (dateStr == null) continue;
+      try {
+        final parsed = DateTime.parse(dateStr);
+        if (lastApptDate == null || parsed.isAfter(lastApptDate)) {
+          lastApptDate = parsed;
+        }
+      } catch (_) {}
+    }
+
+    final monthsSince = _adminController.getMonthsSinceLastAppointment(lastApptDate);
+    if (monthsSince < minMonthsSinceLastAppointment) return;
+
+    final totalAgendamentos = agendamentos.length;
+
+    double totalGasto = 0.0;
+    for (final data in agendamentos) {
+      if (data['status'] != 'completed') continue;
+      final priceValue = data['price'];
+      if (priceValue is num) {
+        totalGasto += priceValue.toDouble();
+      } else if (priceValue is String) {
+        totalGasto += double.tryParse(priceValue) ?? 0.0;
+      }
+    }
+
+    final envioStats = envioStatsPorCliente[cliente.uid] ?? {'qtdEnvios': 0, 'ultimoEnvioAt': null};
+    final qtdEnviosRaw = envioStats['qtdEnvios'];
+    final qtdEnvios = qtdEnviosRaw is num ? qtdEnviosRaw.toInt() : 0;
+    final ultimoEnvioRaw = envioStats['ultimoEnvioAt'];
+    final ultimoEnvioAt = ultimoEnvioRaw is DateTime ? ultimoEnvioRaw : null;
+
+    items.add(
+      RetencaoClientesItem(
+        clienteId: cliente.uid,
+        nome: cliente.name,
+        email: cliente.email,
+        telemovel: cliente.phone,
+        totalAgendamentos: totalAgendamentos,
+        totalGasto: totalGasto,
+        ultimoAgendamento: lastApptDate,
+        qtdEnviosCampanha: qtdEnvios,
+        ultimoEnvioAt: ultimoEnvioAt,
+      ),
+    );
+  }));
+
+  items.sort((a, b) {
+    final aDate = a.ultimoAgendamento;
+    final bDate = b.ultimoAgendamento;
+    if (aDate == null && bDate == null) return 0;
+    if (aDate == null) return -1;
+    if (bDate == null) return 1;
+    return aDate.compareTo(bDate);
+  });
+
+  return items;
+}
+
+
 }
