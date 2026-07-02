@@ -394,9 +394,16 @@ exports.testEmail = functions.https.onCall(async (data, context) => {
 // para o instante UTC real correspondente — sem isto, `new Date(...)` assume
 // UTC (fuso do runtime das Cloud Functions), o que causa um erro de 1-2h.
 function lisbonWallTimeToUtcDate(dateStr, timeStr) {
-  // Cria uma data "palpite" assumindo UTC, para descobrir o offset de Lisboa
-  // nesse dia/hora específico (o offset muda com o horário de verão).
-  const guessUtc = new Date(`${dateStr}T${timeStr}:00Z`);
+  // Normaliza a hora para garantir 2 dígitos (ex: "9:30" -> "09:30")
+  const timeParts = (timeStr || '').split(':');
+  if (timeParts.length < 2) return null;
+  const paddedTime = `${timeParts[0].padStart(2, '0')}:${timeParts[1].padStart(2, '0')}`;
+
+  const guessUtc = new Date(`${dateStr}T${paddedTime}:00Z`);
+  if (isNaN(guessUtc.getTime())) {
+    console.error(`lisbonWallTimeToUtcDate: data/hora inválida — date="${dateStr}" time="${timeStr}"`);
+    return null;
+  }
 
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Europe/Lisbon',
@@ -408,10 +415,7 @@ function lisbonWallTimeToUtcDate(dateStr, timeStr) {
   const lisbonHour = Number(parts.find(p => p.type === 'hour').value);
   const lisbonMinute = Number(parts.find(p => p.type === 'minute').value);
 
-  const [targetHour, targetMinute] = timeStr.split(':').map(Number);
-
-  // Diferença entre a hora que o "palpite UTC" mostra em Lisboa e a hora que
-  // queríamos que fosse em Lisboa = o offset a corrigir.
+  const [targetHour, targetMinute] = paddedTime.split(':').map(Number);
   const diffMinutes = (targetHour * 60 + targetMinute) - (lisbonHour * 60 + lisbonMinute);
 
   return new Date(guessUtc.getTime() + diffMinutes * 60000);
@@ -454,10 +458,10 @@ exports.autoCompleteBookings = functions.pubsub
         const bookingDate = data.date || ''; // "YYYY-MM-DD"
         const bookingTime = data.time || '00:00'; // "HH:MM"
         
-       const bookingDateTime = lisbonWallTimeToUtcDate(bookingDate, bookingTime);
-        
-        // Check if booking time has passed
-        if (bookingDateTime < now) {
+   const bookingDateTime = lisbonWallTimeToUtcDate(bookingDate, bookingTime);
+if (!bookingDateTime) return; // 👈 ADICIONA ESTA LINHA — salta docs inválidos
+
+if (bookingDateTime < now) {
           bookingsToComplete.push({
             id: doc.id,
             ref: doc.ref,
@@ -624,7 +628,6 @@ exports.sendAppointmentReminders = functions.pubsub
     const nowTimestamp = admin.firestore.Timestamp.fromDate(now);
 
     try {
-      // Buscar agendamentos confirmados que ainda não receberam lembretes
       const snapshot = await admin.firestore()
         .collection('agendamentos')
         .where('status', '==', 'confirmed')
@@ -641,14 +644,18 @@ exports.sendAppointmentReminders = functions.pubsub
         if (!data.date || !data.time || !data.email) continue;
 
         const appointmentDateTime = lisbonWallTimeToUtcDate(data.date, data.time);
+        if (!appointmentDateTime) continue; // 👈 A ÚNICA LINHA NOVA AQUI
+
         const diffMinutes = (appointmentDateTime - now) / 60000;
+        // 👇 LOG TEMPORÁRIO DE DIAGNÓSTICO — remove depois de resolver
+
+        console.log(`🔍 [${data.email}] date=${data.date} time=${data.time} diffMinutes=${diffMinutes.toFixed(1)} reminderSent=${!!data.reminderSent} reminder1DaySent=${!!data.reminder1DaySent}`);
+
         const diffHours = diffMinutes / 60;
         const diffDays = diffHours / 24;
 
-        // Enviar lembrete 1 dia antes (entre 24h e 23h50min antes)
         if (diffDays <= 1 && diffDays > 0.98 && !data.reminder1DaySent) {
           console.log(`📧 Enviando lembrete de 1 dia para ${data.email}`);
-
           await admin.firestore().collection('mail').add({
             to_email: data.email,
             template: 'appointment_reminder_1day',
@@ -662,18 +669,14 @@ exports.sendAppointmentReminders = functions.pubsub
             price: data.price,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
           });
-
           await doc.ref.update({
             reminder1DaySent: true,
             reminder1DaySentAt: nowTimestamp
           });
         }
 
-        // Enviar lembrete 1h30min antes (entre 90min e 85min antes)
-        // Janela mais tolerante: 80 a 95 minutos antes, em vez de só 85-90.
         if (diffMinutes <= 95 && diffMinutes > 80 && !data.reminderSent) {
           console.log(`📧 Enviando lembrete de 1h30min para ${data.email}`);
-
           await admin.firestore().collection('mail').add({
             to_email: data.email,
             template: 'appointment_reminder',
@@ -687,7 +690,6 @@ exports.sendAppointmentReminders = functions.pubsub
             price: data.price,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
           });
-
           await doc.ref.update({
             reminderSent: true,
             reminderSentAt: nowTimestamp
