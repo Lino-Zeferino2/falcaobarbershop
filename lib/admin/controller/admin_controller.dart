@@ -19,7 +19,11 @@ import '../../services/email_service.dart';
 class AdminController {
   final FirebaseFirestore _firestore = firestore; // (default)
 
+
+
   final StreamController<int> _unreadCountController = StreamController<int>.broadcast();
+  final Map<String, String> _professionalNameCache = {};
+  final Map<String, int> _serviceDurationCache = {};
 
   Stream<int> get unreadNotificationsCountStream => _unreadCountController.stream;
 
@@ -136,43 +140,162 @@ class AdminController {
     }
   }
 
-  // Obter agendamentos recentes (default)
-  Stream<List<AppointmentModel>> getRecentAppointments() {
-    final controller = StreamController<List<AppointmentModel>>();
+  
+ // Obter agendamentos recentes (default)
+Stream<List<AppointmentModel>> getRecentAppointments() {
+  return getAllAppointments().map((appointments) {
+    final sorted = List<AppointmentModel>.from(appointments)
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return sorted.take(10).toList();
+  });
+}
 
-    Query<Map<String, dynamic>> query = _firestore
-        .collection('agendamentos')
-        .orderBy('createdAt', descending: true)
-        .limit(10);
+ // Cache em memória — evita re-buscar o mesmo profissional/serviço a cada
+// snapshot. Invalida-se sozinho quando o profissional/serviço muda, porque
+// vamos atualizar o cache sempre que buscarmos de novo (ver abaixo).
 
-    StreamSubscription? sub;
-    sub = query.snapshots().listen((snapshot) async {
-      final appointments = await Future.wait(
-        snapshot.docs.map((doc) => _mapBookingToAppointmentLegacy(doc as DocumentSnapshot<Map<String, dynamic>>, sourceDb: '(default)')),
-      );
-      appointments.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      controller.add(appointments.take(10).toList());
-    }, onError: controller.addError);
+// Obter todos os agendamentos (default)
+Stream<List<AppointmentModel>> getAllAppointments() {
+  return _firestore.collection('agendamentos').snapshots().asyncMap((snapshot) async {
+    final docs = snapshot.docs.cast<DocumentSnapshot<Map<String, dynamic>>>();
 
-    controller.onCancel = () async {
-      await sub?.cancel();
-      await controller.close();
-    };
+    // 1ª passagem: recolhe, sem duplicados, os IDs de profissional e as
+    // combinações serviço+profissional que ainda não estão em cache.
+    final Set<String> profIdsToFetch = {};
+    final Set<String> serviceKeysToFetch = {};
 
-    return controller.stream;
+    for (final doc in docs) {
+      final data = doc.data();
+      if (data == null) continue;
+
+      final professionalId = data['professional'] as String? ?? '';
+      if (professionalId.isNotEmpty && !_professionalNameCache.containsKey(professionalId)) {
+        profIdsToFetch.add(professionalId);
+      }
+
+      final duration = (data['duracao'] ?? data['duration']) as int?;
+      final serviceName = data['service'] as String? ?? '';
+      if ((duration == null || duration == 0) && serviceName.isNotEmpty && professionalId.isNotEmpty) {
+        final key = '$serviceName|$professionalId';
+        if (!_serviceDurationCache.containsKey(key)) {
+          serviceKeysToFetch.add(key);
+        }
+      }
+    }
+
+    // 2ª passagem: resolve profissionais em lotes de 10 (limite do whereIn),
+    // todos em paralelo — em vez de 1 await por agendamento.
+    if (profIdsToFetch.isNotEmpty) {
+      final ids = profIdsToFetch.toList();
+      const batchSize = 10;
+      final batches = <Future<void>>[];
+      for (var i = 0; i < ids.length; i += batchSize) {
+        final batchIds = ids.sublist(i, i + batchSize > ids.length ? ids.length : i + batchSize);
+        batches.add(
+          _firestore
+              .collection('profissionais')
+              .where(FieldPath.documentId, whereIn: batchIds)
+              .get()
+              .then((snap) {
+            for (final d in snap.docs) {
+              _professionalNameCache[d.id] = d.data()['name'] ?? d.id;
+            }
+          }).catchError((e) => print('Error fetching professional batch: $e')),
+        );
+      }
+      await Future.wait(batches);
+    }
+
+    // 3ª passagem: resolve durações de serviço que ainda faltam, em paralelo.
+    if (serviceKeysToFetch.isNotEmpty) {
+      final futures = serviceKeysToFetch.map((key) async {
+        final parts = key.split('|');
+        final serviceName = parts[0];
+        final professionalId = parts[1];
+        try {
+          final q = await _firestore
+              .collection('servicos')
+              .where('nome', isEqualTo: serviceName)
+              .where('profissionalId', isEqualTo: professionalId)
+              .limit(1)
+              .get();
+          if (q.docs.isNotEmpty) {
+            _serviceDurationCache[key] = (q.docs.first.data()['duracao'] ?? 0).toInt();
+          }
+        } catch (e) {
+          print('Error fetching service duration: $e');
+        }
+      });
+      await Future.wait(futures);
+    }
+
+    // 4ª passagem: monta os AppointmentModel só com dados já em memória —
+    // nenhum await aqui, é tudo síncrono e instantâneo.
+    final appointments = docs.map((doc) => _mapBookingToAppointmentFast(doc, sourceDb: '(default)')).toList();
+    appointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    return appointments;
+  });
+}
+
+// Versão sem awaits — usa os caches já preenchidos por getAllAppointments().
+AppointmentModel _mapBookingToAppointmentFast(
+  DocumentSnapshot<Map<String, dynamic>> doc, {
+  required String sourceDb,
+}) {
+  final data = doc.data() ?? <String, dynamic>{};
+  DateTime parsedDate;
+  final dateStr = data['date'] ?? '';
+  final timeStr = data['time'] ?? '00:00';
+
+  try {
+    final timeParts = timeStr.split(':');
+    final hour = timeParts[0].padLeft(2, '0');
+    final minute = timeParts.length > 1 ? timeParts[1].padLeft(2, '0') : '00';
+    parsedDate = DateTime.parse('${dateStr}T$hour:$minute:00');
+  } catch (e) {
+    try {
+      parsedDate = DateTime.parse(dateStr);
+    } catch (e2) {
+      parsedDate = DateTime.now();
+    }
   }
 
+  final professionalId = data['professional'] as String? ?? '';
+  final barberName = _professionalNameCache[professionalId] ?? professionalId;
 
-  // Obter todos os agendamentos (default)
-  Stream<List<AppointmentModel>> getAllAppointments() {
-    return _firestore.collection('agendamentos').snapshots().asyncMap((snapshot) async {
-      final appointments = await Future.wait(
-        snapshot.docs.map((doc) => _mapBookingToAppointmentLegacy(doc as DocumentSnapshot<Map<String, dynamic>>, sourceDb: '(default)')),
-      );
-      appointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
-      return appointments;
-    });
+  final serviceName = data['service'] as String? ?? '';
+  int duration = (data['duracao'] ?? data['duration']) as int? ?? 0;
+  if (duration == 0) {
+    duration = _serviceDurationCache['$serviceName|$professionalId'] ?? _getServiceDuration(serviceName);
   }
+
+  DateTime? concludedAt;
+  if (data['concludedAt'] != null) {
+    if (data['concludedAt'] is Timestamp) {
+      concludedAt = (data['concludedAt'] as Timestamp).toDate();
+    } else if (data['concludedAt'] is String) {
+      try {
+        concludedAt = DateTime.parse(data['concludedAt']);
+      } catch (_) {}
+    }
+  }
+
+  return AppointmentModel(
+    id: '${sourceDb}_${doc.id}',
+    clientId: data['userId'] ?? data['anonymousId'] ?? '',
+    clientName: data['name'] ?? '',
+    clientPhone: data['phone'] ?? '',
+    barberId: professionalId,
+    barberName: barberName,
+    serviceName: serviceName,
+    price: (data['price'] ?? _getServicePrice(serviceName)).toDouble(),
+    duration: duration,
+    dateTime: parsedDate,
+    status: _mapStatus(data['status'] ?? 'pending'),
+    createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    concludedAt: concludedAt,
+  );
+}
 
 
   // Mapear dados de 'agendamentos' para AppointmentModel
@@ -292,6 +415,8 @@ class AdminController {
       concludedAt: concludedAt,
     );
   }
+
+
 
   // Obter duração baseado no nome do serviço (fallback)
   int _getServiceDuration(String serviceName) {

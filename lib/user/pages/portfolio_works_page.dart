@@ -14,8 +14,6 @@ class _Palette {
   static const surface = Color(0xFF161617);
   static const surfaceLight = Color(0xFF1F1F21);
   static const primary = Color(0xFFB22222);
-  static const primaryDark = Color(0xFF8C1A1A);
-  static const textPrimary = Colors.white;
   static const textSecondary = Color(0xFFA8A8AC);
 }
 

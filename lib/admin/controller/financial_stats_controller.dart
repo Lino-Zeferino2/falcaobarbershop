@@ -109,44 +109,61 @@ class FinancialStatsController {
   }
 
   // Enrich bookings with professional names
-  Future<void> _enrichBookingsWithProfessionalNames(List<BookingData> bookings) async {
-    final professionalIds = bookings
-        .map((b) => b.professionalId)
-        .where((id) => id.isNotEmpty)
-        .toSet();
+ // Enrich bookings with professional names
+Future<void> _enrichBookingsWithProfessionalNames(List<BookingData> bookings) async {
+  final professionalIds = bookings
+      .map((b) => b.professionalId)
+      .where((id) => id.isNotEmpty)
+      .toSet()
+      .toList();
 
-    final professionalNames = <String, String>{};
+  if (professionalIds.isEmpty) return;
 
-    for (var id in professionalIds) {
-      try {
-        final doc = await _firestore.collection('profissionais').doc(id).get();
-        if (doc.exists) {
-          professionalNames[id] = doc.data()?['name'] ?? id;
+  final professionalNames = <String, String>{};
+
+  // Resolve em lotes de 10 (limite do whereIn do Firestore), todos em
+  // paralelo — em vez de um await por profissional, um de cada vez.
+  const batchSize = 10;
+  final batches = <Future<void>>[];
+  for (var i = 0; i < professionalIds.length; i += batchSize) {
+    final end = (i + batchSize < professionalIds.length) ? i + batchSize : professionalIds.length;
+    final batchIds = professionalIds.sublist(i, end);
+
+    batches.add(
+      _firestore
+          .collection('profissionais')
+          .where(FieldPath.documentId, whereIn: batchIds)
+          .get()
+          .then((snap) {
+        for (final doc in snap.docs) {
+          professionalNames[doc.id] = doc.data()['name'] ?? doc.id;
         }
-      } catch (e) {
-        // Keep original ID if fetch fails
-      }
-    }
-
-    // Update booking professional names
-    for (var i = 0; i < bookings.length; i++) {
-      if (professionalNames.containsKey(bookings[i].professionalId)) {
-        bookings[i] = BookingData(
-          id: bookings[i].id,
-          serviceName: bookings[i].serviceName,
-          professionalId: bookings[i].professionalId,
-          professionalName: professionalNames[bookings[i].professionalId]!,
-          barbershopId: bookings[i].barbershopId,
-          barbershopName: bookings[i].barbershopName,
-          price: bookings[i].price,
-          dateTime: bookings[i].dateTime,
-          concludedAt: bookings[i].concludedAt,
-          status: bookings[i].status,
-        );
-      }
-    }
+      }).catchError((e) {
+        print('Error fetching professional batch: $e');
+      }),
+    );
   }
 
+  await Future.wait(batches);
+
+  // Update booking professional names
+  for (var i = 0; i < bookings.length; i++) {
+    if (professionalNames.containsKey(bookings[i].professionalId)) {
+      bookings[i] = BookingData(
+        id: bookings[i].id,
+        serviceName: bookings[i].serviceName,
+        professionalId: bookings[i].professionalId,
+        professionalName: professionalNames[bookings[i].professionalId]!,
+        barbershopId: bookings[i].barbershopId,
+        barbershopName: bookings[i].barbershopName,
+        price: bookings[i].price,
+        dateTime: bookings[i].dateTime,
+        concludedAt: bookings[i].concludedAt,
+        status: bookings[i].status,
+      );
+    }
+  }
+}
   // Get financial statistics based on filter
   Future<FinancialStatsModel> getFinancialStats(FilterModel filter) async {
     try {

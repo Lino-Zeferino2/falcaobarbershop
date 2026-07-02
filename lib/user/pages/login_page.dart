@@ -1,6 +1,5 @@
 // ignore_for_file: use_build_context_synchronously
 
-import 'package:falcaobarbershopv2/main.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../controller/auth_controller.dart';
@@ -17,7 +16,6 @@ class _Palette {
   static const textPrimary = Colors.white;
   static const textSecondary = Color(0xFFA8A8AC);
   static const error = Color(0xFFFF5C5C);
-  static const success = Color(0xFF3DDC84);
 }
 
 class LoginPage extends StatefulWidget {

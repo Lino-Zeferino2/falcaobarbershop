@@ -1,7 +1,5 @@
 
 // ignore_for_file: unused_local_variable, unused_element, use_build_context_synchronously
-
-import 'package:falcaobarbershopv2/user/widgets/professional_card.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
