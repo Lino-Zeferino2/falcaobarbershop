@@ -647,8 +647,7 @@ exports.sendAppointmentReminders = functions.pubsub
         if (!appointmentDateTime) continue; // 👈 A ÚNICA LINHA NOVA AQUI
 
         const diffMinutes = (appointmentDateTime - now) / 60000;
-        // 👇 LOG TEMPORÁRIO DE DIAGNÓSTICO — remove depois de resolver
-
+        // LOG TEMPORÁRIO DE DIAGNÓSTICO — remove depois de resolver
         console.log(`🔍 [${data.email}] date=${data.date} time=${data.time} diffMinutes=${diffMinutes.toFixed(1)} reminderSent=${!!data.reminderSent} reminder1DaySent=${!!data.reminder1DaySent}`);
 
         const diffHours = diffMinutes / 60;
@@ -657,18 +656,19 @@ exports.sendAppointmentReminders = functions.pubsub
         if (diffDays <= 1 && diffDays > 0.98 && !data.reminder1DaySent) {
           console.log(`📧 Enviando lembrete de 1 dia para ${data.email}`);
           await admin.firestore().collection('mail').add({
-            to_email: data.email,
-            template: 'appointment_reminder_1day',
-            name: data.name,
-            service: data.service,
-            professional: data.professional,
-            date: data.date,
-            time: data.time,
-            barbearia: data.barbearia,
-            phone: data.phone,
-            price: data.price,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
+              to_email: data.email,
+              email: data.email,                                    // 👈 ADICIONA esta linha
+              template: 'appointment_reminder_1day',
+              name: data.name,
+              service: data.service,
+              professional: data.professionalName || data.professional,  // 👈 MUDA esta linha
+              date: data.date,
+              time: data.time,
+              barbearia: data.barbearia,
+              phone: data.phone,
+              price: data.price,
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
           await doc.ref.update({
             reminder1DaySent: true,
             reminder1DaySentAt: nowTimestamp
@@ -678,18 +678,19 @@ exports.sendAppointmentReminders = functions.pubsub
         if (diffMinutes <= 95 && diffMinutes > 80 && !data.reminderSent) {
           console.log(`📧 Enviando lembrete de 1h30min para ${data.email}`);
           await admin.firestore().collection('mail').add({
-            to_email: data.email,
-            template: 'appointment_reminder',
-            name: data.name,
-            service: data.service,
-            professional: data.professional,
-            date: data.date,
-            time: data.time,
-            barbearia: data.barbearia,
-            phone: data.phone,
-            price: data.price,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
+                to_email: data.email,
+                email: data.email,                                    // 👈 ADICIONA esta linha
+                template: 'appointment_reminder',
+                name: data.name,
+                service: data.service,
+                professional: data.professionalName || data.professional,  // 👈 MUDA esta linha
+                date: data.date,
+                time: data.time,
+                barbearia: data.barbearia,
+                phone: data.phone,
+                price: data.price,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+              });
           await doc.ref.update({
             reminderSent: true,
             reminderSentAt: nowTimestamp
