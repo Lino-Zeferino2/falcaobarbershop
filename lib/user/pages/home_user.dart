@@ -1286,7 +1286,9 @@ Widget _buildCtaSection(bool isMobile) {
                     Row(
                       children: [
                         Container(
-                          decoration: const BoxDecoration(color: Colors.white),
+                          decoration:  BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.white),
                           padding: const EdgeInsets.all(4),
                           child: Image.asset(
                             'assets/images/logo_falcao.png',

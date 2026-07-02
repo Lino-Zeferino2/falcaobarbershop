@@ -7,7 +7,8 @@ class NotificationModel {
   final String mensagem;
   final bool lida;
   final DateTime createdAt;
-  final AppointmentModel? appointment; // Associated appointment for appointment alerts
+  final String tipo; // 👈 NOVO campo — usado para escolher o ícone na UI
+  final AppointmentModel? appointment;
 
   NotificationModel({
     required this.id,
@@ -15,6 +16,7 @@ class NotificationModel {
     required this.mensagem,
     required this.lida,
     required this.createdAt,
+    this.tipo = 'default', // 👈 NOVO, com valor por omissão seguro
     this.appointment,
   });
 
@@ -25,7 +27,8 @@ class NotificationModel {
       mensagem: map['mensagem'] ?? '',
       lida: map['lida'] ?? false,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      appointment: null, // Will be set when creating appointment alerts
+      tipo: map['tipo'] ?? 'default', // 👈 NOVO
+      appointment: null,
     );
   }
 
@@ -62,6 +65,7 @@ class NotificationModel {
       mensagem: mensagem,
       lida: false,
       createdAt: appointment.createdAt,
+      tipo: type, // 👈 NOVO — agora o "type" recebido é guardado, não descartado
       appointment: appointment,
     );
   }
@@ -72,6 +76,7 @@ class NotificationModel {
       'mensagem': mensagem,
       'lida': lida,
       'createdAt': createdAt,
+      'tipo': tipo, // 👈 NOVO
     };
   }
 
@@ -81,6 +86,7 @@ class NotificationModel {
     String? mensagem,
     bool? lida,
     DateTime? createdAt,
+    String? tipo, // 👈 NOVO
     AppointmentModel? appointment,
   }) {
     return NotificationModel(
@@ -89,6 +95,7 @@ class NotificationModel {
       mensagem: mensagem ?? this.mensagem,
       lida: lida ?? this.lida,
       createdAt: createdAt ?? this.createdAt,
+      tipo: tipo ?? this.tipo, // 👈 NOVO
       appointment: appointment ?? this.appointment,
     );
   }
