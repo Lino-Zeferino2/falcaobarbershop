@@ -390,7 +390,32 @@ exports.testEmail = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('internal', error.message);
   }
 });
+// Converte uma data/hora "de parede" em Lisboa (ex: "2026-07-02", "14:30")
+// para o instante UTC real correspondente — sem isto, `new Date(...)` assume
+// UTC (fuso do runtime das Cloud Functions), o que causa um erro de 1-2h.
+function lisbonWallTimeToUtcDate(dateStr, timeStr) {
+  // Cria uma data "palpite" assumindo UTC, para descobrir o offset de Lisboa
+  // nesse dia/hora específico (o offset muda com o horário de verão).
+  const guessUtc = new Date(`${dateStr}T${timeStr}:00Z`);
 
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Lisbon',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(guessUtc);
+
+  const lisbonHour = Number(parts.find(p => p.type === 'hour').value);
+  const lisbonMinute = Number(parts.find(p => p.type === 'minute').value);
+
+  const [targetHour, targetMinute] = timeStr.split(':').map(Number);
+
+  // Diferença entre a hora que o "palpite UTC" mostra em Lisboa e a hora que
+  // queríamos que fosse em Lisboa = o offset a corrigir.
+  const diffMinutes = (targetHour * 60 + targetMinute) - (lisbonHour * 60 + lisbonMinute);
+
+  return new Date(guessUtc.getTime() + diffMinutes * 60000);
+}
 // Cloud Function para auto-completar agendamentos confirmados que já passaram da hora
 exports.autoCompleteBookings = functions.pubsub
   .schedule('every 5 minutes')
@@ -429,8 +454,7 @@ exports.autoCompleteBookings = functions.pubsub
         const bookingDate = data.date || ''; // "YYYY-MM-DD"
         const bookingTime = data.time || '00:00'; // "HH:MM"
         
-        // Combine date and time for comparison
-        const bookingDateTime = new Date(`${bookingDate}T${bookingTime}:00`);
+       const bookingDateTime = lisbonWallTimeToUtcDate(bookingDate, bookingTime);
         
         // Check if booking time has passed
         if (bookingDateTime < now) {
@@ -616,7 +640,7 @@ exports.sendAppointmentReminders = functions.pubsub
 
         if (!data.date || !data.time || !data.email) continue;
 
-        const appointmentDateTime = new Date(`${data.date}T${data.time}:00`);
+        const appointmentDateTime = lisbonWallTimeToUtcDate(data.date, data.time);
         const diffMinutes = (appointmentDateTime - now) / 60000;
         const diffHours = diffMinutes / 60;
         const diffDays = diffHours / 24;
@@ -646,7 +670,8 @@ exports.sendAppointmentReminders = functions.pubsub
         }
 
         // Enviar lembrete 1h30min antes (entre 90min e 85min antes)
-        if (diffMinutes <= 90 && diffMinutes > 85 && !data.reminderSent) {
+        // Janela mais tolerante: 80 a 95 minutos antes, em vez de só 85-90.
+        if (diffMinutes <= 95 && diffMinutes > 80 && !data.reminderSent) {
           console.log(`📧 Enviando lembrete de 1h30min para ${data.email}`);
 
           await admin.firestore().collection('mail').add({

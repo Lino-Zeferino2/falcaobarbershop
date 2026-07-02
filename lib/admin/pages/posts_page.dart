@@ -167,18 +167,24 @@ class _PostsPageState extends State<PostsPage> {
                     return Center(child: CircularProgressIndicator());
                   },
                   errorBuilder: (context, error, stackTrace) {
-                    print('Error loading image: $error');
-                    return Container(
-                      color: Colors.grey[300],
-                      child: Center(
-                        child: Text(
-                          'Erro ao carregar imagem: $error',
-                          style: TextStyle(color: Colors.red, fontSize: 12),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    );
-                  },
+  debugPrint('Error loading image: $error, url: ${post.imageUrl}');
+  return Container(
+    color: const Color(0xFF2A2A2A),
+    child: const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.broken_image_outlined, color: Colors.white38, size: 32),
+          SizedBox(height: 6),
+          Text(
+            'Não foi possível carregar a imagem',
+            style: TextStyle(color: Colors.white38, fontSize: 12),
+          ),
+        ],
+      ),
+    ),
+  );
+},
                 ),
               ),
             const SizedBox(height: 12),
@@ -319,7 +325,12 @@ class _PostsPageState extends State<PostsPage> {
         const SnackBar(content: Text('Preencha a descrição')),
       );
       return;
-    }
+    }if (imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('URL da imagem inválida. Deve começar com http:// ou https://')),
+  );
+  return;
+}
 
     try {
       String? finalImageUrl = imageUrl.isNotEmpty ? imageUrl : null;
