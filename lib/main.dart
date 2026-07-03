@@ -1,7 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:falcaobarbershopv2/user/pages/anonymous_appointments_page.dart';
-import 'package:falcaobarbershopv2/user/pages/history_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,7 +8,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'firebase_options.dart';
 
-
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'user/pages/home_user.dart';
 import 'admin/pages/home_admin.dart';
 import 'professional/pages/home_professional_page.dart';
@@ -17,9 +16,9 @@ import 'user/controller/auth_controller.dart';
 import 'user/model/user_model.dart';
 
 Future<void> main() async {
-  
+  usePathUrlStrategy();
   WidgetsFlutterBinding.ensureInitialized();
-   await initializeDateFormatting('pt_BR', null);
+  await initializeDateFormatting('pt_BR', null);
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -28,6 +27,7 @@ Future<void> main() async {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -42,16 +42,16 @@ class MyApp extends StatelessWidget {
         fontFamily: GoogleFonts.inter().fontFamily,
         colorScheme: const ColorScheme(
           brightness: Brightness.dark,
-          primary: Color(0xFFFF0000), // Red
-          onPrimary: Colors.white, // Strong white
-          secondary: Color(0xFFFF0000), // Red
-          onSecondary: Colors.white, // Strong white
+          primary: Color(0xFFFF0000),
+          onPrimary: Colors.white,
+          secondary: Color(0xFFFF0000),
+          onSecondary: Colors.white,
           error: Colors.red,
           onError: Colors.white,
-          surface: Color(0xFF1A1A1A), // Dark gray for surfaces
-          onSurface: Colors.white, // Strong white
-          background: Colors.black, // Black background
-          onBackground: Colors.white, // Strong white
+          surface: Color(0xFF1A1A1A),
+          onSurface: Colors.white,
+          background: Colors.black,
+          onBackground: Colors.white,
         ),
         scaffoldBackgroundColor: Colors.black,
         appBarTheme: const AppBarTheme(
@@ -65,11 +65,23 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      initialRoute: '/',
-      routes: {
-        '/history': (context) => const AuthWrapper(), // Will handle navigation in AuthWrapper
+      // onGenerateRoute lê o path real do browser (ex: "/history") e decide
+      // já de imediato qual página construir — sem passar por HomeUser
+      // primeiro nem depender de delays artificiais.
+      onGenerateRoute: (settings) {
+        if (settings.name == '/history') {
+          return MaterialPageRoute(
+            settings: settings,
+            builder: (context) => const AnonymousAppointmentsPage(),
+          );
+        }
+        // Qualquer outro path (incluindo "/") cai no fluxo normal baseado em role.
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (context) => const AuthWrapper(),
+        );
       },
-      home: const AuthWrapper(),
+      initialRoute: WidgetsBinding.instance.platformDispatcher.defaultRouteName,
     );
   }
 }
@@ -86,78 +98,29 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    print('AuthWrapper: Building AuthWrapper widget');
-
-    // Check if we need to navigate to history page
-    final route = ModalRoute.of(context);
-    final routeName = route?.settings.name;
-    print('AuthWrapper: Current route: $routeName');
-
     return StreamBuilder<UserModel?>(
       stream: _authController.userStream,
       builder: (context, snapshot) {
-        print('AuthWrapper: StreamBuilder called - connectionState=${snapshot.connectionState}, hasData=${snapshot.hasData}, hasError=${snapshot.hasError}');
-
         if (snapshot.hasError) {
-          print('AuthWrapper error: ${snapshot.error}');
-          // Em caso de erro, redirecionar para HomeUser (que tem botão de login)
           return const HomeUser();
         }
 
-        // Mostrar loading apenas na primeira vez ou quando não há dados ainda
         if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-          print('AuthWrapper: Showing loading...');
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        if (snapshot.hasData && snapshot.data != null) {
-          final user = snapshot.data!;
-          print('AuthWrapper: User found with role: ${user.role}, uid: ${user.uid}, email: ${user.email}');
+        final user = snapshot.data;
 
-          // Check for admin role
-          if (user.role == 'admin') {
-            print('AuthWrapper: Navigating to HomeAdmin');
-            return const HomeAdmin();
-          } else if (user.role == 'barbeiro') {
-            print('AuthWrapper: Navigating to HomeProfessionalPage');
-            return const HomeProfessionalPage();
-          } else {
-            print('AuthWrapper: Navigating to HomeUser (default)');
-            // Check if we need to navigate to history
-            if (routeName == '/history') {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomeUser()));
-                // Navigate to history after a short delay to ensure HomeUser is loaded
-                Future.delayed(const Duration(milliseconds: 100), () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryPage()));
-                });
-              });
-            }
-            return const HomeUser();
-          }
-        } else {
-          print('AuthWrapper: No user data, showing HomeUser');
-          // Usuário não logado - check if we need to navigate to history
-          if (routeName == '/history') {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomeUser()));
-              // Navigate to anonymous appointments after a short delay
-              Future.delayed(const Duration(milliseconds: 100), () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const AnonymousAppointmentsPage()));
-              });
-            });
-          }
+        if (user != null) {
+          if (user.role == 'admin') return const HomeAdmin();
+          if (user.role == 'barbeiro') return const HomeProfessionalPage();
           return const HomeUser();
         }
+
+        return const HomeUser();
       },
     );
-  }
-
-  @override
-  void dispose() {
-    // Removed dispose call for AuthController singleton to prevent stream closure issues
-    super.dispose();
   }
 }
