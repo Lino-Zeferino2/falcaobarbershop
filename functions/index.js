@@ -555,22 +555,30 @@ exports.sendNewBookingNotification = functions.firestore
       
       // Preparar a mensagem de notificação
       const message = {
-        notification: {
-          title: 'Novo Agendamento Recebido',
-          body: `${bookingData.name || 'Cliente'} agendou ${bookingData.service || 'um serviço'} para ${bookingData.date || ''} às ${bookingData.time || ''}`,
-          icon: '/icons/Icon-192.png',
-        },
-        data: {
-          click_action: '/admin/notificacoes',
-          bookingId: context.params.bookingId,
-          type: 'new_booking',
-          name: bookingData.name || '',
-          service: bookingData.service || '',
-          date: bookingData.date || '',
-          time: bookingData.time || '',
-        },
-        tokens: tokens,
-      };
+            notification: {
+              title: 'Novo Agendamento Recebido',
+              body: `${bookingData.name || 'Cliente'} agendou ${bookingData.service || 'um serviço'} para ${bookingData.date || ''} às ${bookingData.time || ''}`,
+            },
+            webpush: {
+              notification: {
+                icon: '/icons/Icon-192.png',
+                badge: '/icons/Icon-192.png',
+              },
+              fcmOptions: {
+                link: '/admin/notificacoes',
+              },
+            },
+            data: {
+              click_action: '/admin/notificacoes',
+              bookingId: context.params.bookingId,
+              type: 'new_booking',
+              name: bookingData.name || '',
+              service: bookingData.service || '',
+              date: bookingData.date || '',
+              time: bookingData.time || '',
+            },
+            tokens: tokens,
+      };  
       
       // Enviar notificação para todos os tokens
       const response = await admin.messaging().sendEachForMulticast(message);
