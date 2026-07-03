@@ -63,9 +63,7 @@ class DefaultFirebaseOptions {
   );
 
   // VAPID key for Web Push Notifications
-  // VAPID key for Web Push Notifications
-  // (preencha com a vapidKey do novo Firebase)
-  static const String vapidKey = 'BDayEa0JrKlDXEFmw0mZuSKf5USFDIl_TFRjhgEJNBPdPLjEHDv3YX_a2NT4q6jcmUqFXNV5l9HO7Y_ek-ucP2Q';
+  static const String vapidKey = 'BCLydyYtqtchzn0qJIB3dfQ5JJqahS7icdqrOLpEmdEQHFjsTsdwa6MSJby3kT2RuYfwMECj0N5H0bLh7z3lCv4';
 
 
 
