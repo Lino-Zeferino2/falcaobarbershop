@@ -228,7 +228,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     child: ElevatedButton(
                       onPressed: _isSaving ? null : _saveSettings,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
+                        backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
@@ -317,7 +317,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     });
                   },
                   backgroundColor: const Color(0xFF3A3A3A),
-                  selectedColor: Colors.blue,
+                  selectedColor: Colors.red,
                   checkmarkColor: Colors.white,
                 );
               }).toList(),
@@ -415,7 +415,7 @@ class _SettingsPageState extends State<SettingsPage> {
             return Theme(
               data: Theme.of(context).copyWith(
                 colorScheme: const ColorScheme.dark(
-                  primary: Colors.blue,
+                  primary: Colors.red,
                   onPrimary: Colors.white,
                   surface: Color(0xFF2A2A2A),
                   onSurface: Colors.white,
