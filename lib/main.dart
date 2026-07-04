@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: depend_on_referenced_packages, use_build_context_synchronously
 
 import 'package:falcaobarbershopv2/user/pages/anonymous_appointments_page.dart';
 import 'package:firebase_core/firebase_core.dart';

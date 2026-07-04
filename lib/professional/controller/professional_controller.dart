@@ -540,7 +540,30 @@ Future<UserModel?> getCurrentBarberProfile() async {
       rethrow;
     }
   }
+// Update professional's profile photo URL in the 'profissionais' collection.
+Future<void> updateProfilePhoto(String fotoUrl) async {
+  try {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('User not authenticated');
 
+    final query = await _firestore
+        .collection('profissionais')
+        .where('userId', isEqualTo: user.uid)
+        .limit(1)
+        .get();
+
+    if (query.docs.isEmpty) {
+      throw Exception('Documento profissional não encontrado');
+    }
+
+    await _firestore.collection('profissionais').doc(query.docs.first.id).update({
+      'fotoUrl': fotoUrl,
+    });
+  } catch (e) {
+    print('Error updating profile photo: $e');
+    rethrow;
+  }
+}
   // Get barber's barbearia info
   Future<BarbeariaModel?> getBarberBarbearia(String barbeariaId) async {
     try {

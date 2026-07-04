@@ -9,7 +9,9 @@ import '../../admin/model/notification_model.dart';
 import '../../admin/model/profissional_model.dart';
 import '../../admin/model/service_model.dart';
 import '../../user/model/user_model.dart';
-
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:math';
 class HomeProfessionalPage extends StatefulWidget {
   const HomeProfessionalPage({super.key});
 
@@ -28,7 +30,8 @@ class _HomeProfessionalPageState extends State<HomeProfessionalPage> {
   DateTime? _startDateFilter;
   DateTime? _endDateFilter;
   final TextEditingController _searchController = TextEditingController();
-
+final ImagePicker _picker = ImagePicker();
+bool _isUploadingPhoto = false;
   final List<String> _pageTitles = [
     'Dashboard',
     'Agendamentos',
@@ -124,15 +127,23 @@ class _HomeProfessionalPageState extends State<HomeProfessionalPage> {
       child: Column(
         children: [
           // Logo/Title
-          Container(
-            padding: const EdgeInsets.all(20),
-            child: Text(
-              'BarberPro',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+            Container(
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+            child: Column(
+              children: [
+                _buildAvatar(size: 64, fontSize: 24),
+                const SizedBox(height: 12),
+                Text(
+                  _barberProfile?.name.split(' ').first ?? 'Barbeiro',
+                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'BarberPro',
+                  style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 0.5),
+                ),
+              ],
             ),
           ),
           // Navigation Items
@@ -228,13 +239,7 @@ class _HomeProfessionalPageState extends State<HomeProfessionalPage> {
           // Barber Avatar and Name
           Row(
             children: [
-              CircleAvatar(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                child: Text(
-                  _barberProfile?.name.substring(0, 1).toUpperCase() ?? 'B',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
-                ),
-              ),
+          _buildAvatar(size: 40, fontSize: 15),
               const SizedBox(width: 12),
               Text(
                 'Olá, ${_barberProfile?.name.split(' ').first ?? 'Barbeiro'}!',
@@ -366,64 +371,76 @@ class _HomeProfessionalPageState extends State<HomeProfessionalPage> {
     );
   }
 
-  Widget _buildSummaryCard(String title, String value, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: Theme.of(context).colorScheme.primary, size: 32),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7), fontSize: 14),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickAction(String title, IconData icon, VoidCallback onTap) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(16),
+Widget _buildSummaryCard(String title, String value, IconData icon) {
+  return Container(
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(
+      color: const Color(0xFF1A1A1A),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Colors.white.withOpacity(0.06)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceVariant,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1),
+            color: const Color(0xFFB22222).withOpacity(0.14),
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Column(
-            children: [
-              Icon(icon, color: Theme.of(context).colorScheme.primary, size: 24),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
-                textAlign: TextAlign.center,
+          child: Icon(icon, color: const Color(0xFFB22222), size: 20),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          title,
+          style: const TextStyle(color: Colors.white54, fontSize: 12.5),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    ),
+  );
+}
+  Widget _buildQuickAction(String title, IconData icon, VoidCallback onTap) {
+  return Expanded(
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withOpacity(0.06)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFB22222).withOpacity(0.14),
+                borderRadius: BorderRadius.circular(12),
               ),
-            ],
-          ),
+              child: Icon(icon, color: const Color(0xFFB22222), size: 22),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
-    );
-  }
-
+    ),
+  );
+}
   Widget _buildAgendamentos(bool isMobile) {
     return StreamBuilder<List<AppointmentModel>>(
       stream: _controller.getBarberAppointments(),
@@ -758,67 +775,53 @@ class _HomeProfessionalPageState extends State<HomeProfessionalPage> {
               child: Column(
                 children: [
                   // Profile Avatar
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Theme.of(context).colorScheme.shadow.withOpacity(0.3),
-                          blurRadius: 15,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: ClipOval(
-                      child: _professionalData?.fotoUrl != null && _professionalData!.fotoUrl!.isNotEmpty
-                          ? Image.network(
-                              _professionalData!.fotoUrl!,
-                              fit: BoxFit.cover,
-                              width: 120,
-                              height: 120,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Container(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                  child: const Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  child: Center(
-                                    child: Text(
-                                      _barberProfile?.name.substring(0, 1).toUpperCase() ?? 'B',
-                                      style: TextStyle(
-                                        color: Theme.of(context).colorScheme.onPrimary,
-                                        fontSize: 48,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            )
-                          : Container(
-                              color: Theme.of(context).colorScheme.primary,
-                              child: Center(
-                                child: Text(
-                                  _barberProfile?.name.substring(0, 1).toUpperCase() ?? 'B',
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onPrimary,
-                                    fontSize: 48,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                    ),
+                Stack(
+  alignment: Alignment.bottomRight,
+  children: [
+    GestureDetector(
+      onTap: _isUploadingPhoto ? null : _pickAndUploadPhoto,
+      child: Container(
+        width: 120,
+        height: 120,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(context).colorScheme.shadow.withOpacity(0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            ClipOval(child: SizedBox(width: 120, height: 120, child: _buildAvatar(size: 120, fontSize: 48))),
+            if (_isUploadingPhoto)
+              Positioned.fill(
+                child: Container(
+                  decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.black54),
+                  child: const Center(
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                   ),
-                  const SizedBox(height: 16),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ),
+    if (!_isUploadingPhoto)
+      Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFB22222),
+          shape: BoxShape.circle,
+          border: Border.all(color: Theme.of(context).colorScheme.surface, width: 3),
+        ),
+        child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 16),
+      ),
+  ],
+),
+const SizedBox(height: 16),
                   // Name and Role
                   Text(
                     _barberProfile?.name ?? 'Barbeiro',
@@ -1482,7 +1485,39 @@ class _HomeProfessionalPageState extends State<HomeProfessionalPage> {
       ),
     );
   }
+Future<void> _pickAndUploadPhoto() async {
+  try {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (pickedFile == null) return;
 
+    setState(() => _isUploadingPhoto = true);
+
+    final bytes = await pickedFile.readAsBytes();
+    final random = Random();
+    final fileName = 'profissionais/${DateTime.now().millisecondsSinceEpoch}_${random.nextInt(1000)}.jpg';
+    final storageRef = FirebaseStorage.instance.ref().child(fileName);
+
+    await storageRef.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
+    final downloadUrl = await storageRef.getDownloadURL();
+
+    await _controller.updateProfilePhoto(downloadUrl);
+    await _loadProfessionalData(); // recarrega para refletir a nova foto
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Foto de perfil atualizada com sucesso!')),
+      );
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao atualizar foto: $e')),
+      );
+    }
+  } finally {
+    if (mounted) setState(() => _isUploadingPhoto = false);
+  }
+}
   void _saveProfile() async {
     if (_barberProfile == null) return;
 
@@ -1891,4 +1926,63 @@ class _HomeProfessionalPageState extends State<HomeProfessionalPage> {
       }
     }
   }
+  // Avatar reutilizável: mostra a foto do profissional se existir, senão a
+// inicial do nome sobre um fundo colorido. Usa-se em qualquer lugar que
+// hoje só mostra a letra inicial (cabeçalho, sidebar, menu mobile).
+Widget _buildAvatar({double size = 40, double fontSize = 16}) {
+  final photoUrl = _professionalData?.fotoUrl;
+  final initial = _barberProfile?.name.trim().isNotEmpty == true
+      ? _barberProfile!.name.trim().substring(0, 1).toUpperCase()
+      : 'B';
+
+  if (photoUrl != null && photoUrl.isNotEmpty) {
+    return ClipOval(
+      child: Image.network(
+        photoUrl,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return Container(
+            width: size,
+            height: size,
+            color: const Color(0xFFB22222).withOpacity(0.15),
+            child: Center(
+              child: SizedBox(
+                width: size * 0.4,
+                height: size * 0.4,
+                child: const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFB22222)),
+              ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) => _avatarFallback(size, fontSize, initial),
+      ),
+    );
+  }
+
+  return _avatarFallback(size, fontSize, initial);
+}
+
+Widget _avatarFallback(double size, double fontSize, String initial) {
+  return Container(
+    width: size,
+    height: size,
+    decoration: const BoxDecoration(
+      shape: BoxShape.circle,
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFFB22222), Color(0xFF7A0000)],
+      ),
+    ),
+    child: Center(
+      child: Text(
+        initial,
+        style: TextStyle(color: Colors.white, fontSize: fontSize, fontWeight: FontWeight.bold),
+      ),
+    ),
+  );
+}
 }

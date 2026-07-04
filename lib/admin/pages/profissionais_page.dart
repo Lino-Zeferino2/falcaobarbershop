@@ -226,78 +226,33 @@ class _AdminProfissionaisPageState extends State<AdminProfissionaisPage> {
                                 style: const TextStyle(color: Colors.white),
                               ),
                             ),
-                            Expanded(
-                              flex: 1,
-                              child: isMobile
-                                  ? PopupMenuButton<String>(
-                                      icon: const Icon(Icons.more_vert, color: Colors.white),
-                                      color: const Color(0xFF2A2A2A),
-                                      onSelected: (value) {
-                                        switch (value) {
-                                          case 'services':
-                                            _showServicesDialog(context, profissional);
-                                            break;
-                                          case 'edit':
-                                            _showProfissionalDialog(context, profissional: profissional);
-                                            break;
-                                          case 'delete':
-                                            _confirmDeleteProfissional(context, profissional);
-                                            break;
-                                        }
-                                      },
-                                      itemBuilder: (context) => [
-                                        const PopupMenuItem(
-                                          value: 'services',
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.room_service, color: Colors.green),
-                                              SizedBox(width: 8),
-                                              Text('Gerenciar Serviços', style: TextStyle(color: Colors.white)),
-                                            ],
-                                          ),
-                                        ),
-                                        const PopupMenuItem(
-                                          value: 'edit',
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.edit, color: Colors.blue),
-                                              SizedBox(width: 8),
-                                              Text('Editar', style: TextStyle(color: Colors.white)),
-                                            ],
-                                          ),
-                                        ),
-                                        const PopupMenuItem(
-                                          value: 'delete',
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.delete, color: Colors.red),
-                                              SizedBox(width: 8),
-                                              Text('Deletar', style: TextStyle(color: Colors.white)),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    )
-                                  : Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.room_service, color: Colors.green),
-                                          onPressed: () => _showServicesDialog(context, profissional),
-                                          tooltip: 'Gerenciar Serviços',
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.edit, color: Colors.blue),
-                                          onPressed: () => _showProfissionalDialog(context, profissional: profissional),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.delete, color: Colors.red),
-                                          onPressed: () => _confirmDeleteProfissional(context, profissional),
-                                        ),
-                                      ],
-                                    ),
-                            ),
-                          ],
+                         Expanded(
+  flex: 1,
+  child: isMobile
+      ? IconButton(
+          icon: const Icon(Icons.more_vert, color: Colors.white),
+          onPressed: () => _showProfissionalActionsSheet(context, profissional),
+        )
+      : Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.room_service, color: Colors.green),
+              onPressed: () => _showServicesDialog(context, profissional),
+              tooltip: 'Gerenciar Serviços',
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.blue),
+              onPressed: () => _showProfissionalDialog(context, profissional: profissional),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.red),
+              onPressed: () => _confirmDeleteProfissional(context, profissional),
+            ),
+          ],
+        ),
+),
+                         ],
                         ),
                       );
                     },
@@ -314,7 +269,64 @@ class _AdminProfissionaisPageState extends State<AdminProfissionaisPage> {
   Future<BarbeariaModel?> _getBarbeariaById(String barbeariaId) async {
     return await _adminController.getBarbeariaById(barbeariaId);
   }
-
+void _showProfissionalActionsSheet(BuildContext context, ProfissionalModel profissional) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withOpacity(0.6),
+    builder: (context) {
+      return Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 44,
+                height: 4.5,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.16),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.room_service, color: Colors.green),
+                title: const Text('Gerenciar Serviços', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showServicesDialog(context, profissional);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.edit, color: Colors.blue),
+                title: const Text('Editar', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showProfissionalDialog(context, profissional: profissional);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text('Deletar', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmDeleteProfissional(context, profissional);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
   void _showProfissionalDialog(BuildContext context, {ProfissionalModel? profissional}) {
     showDialog(
       context: context,
@@ -1578,16 +1590,19 @@ class _ProfissionalServicesDialogState extends State<ProfissionalServicesDialog>
     }
   }
 
-  void _showServiceFormDialog(BuildContext context, {service}) {
-    showDialog(
-      context: context,
-      builder: (context) => ServiceFormDialog(
-        profissional: widget.profissional,
-        adminController: widget.adminController,
-        service: service,
-      ),
-    );
-  }
+void _showServiceFormDialog(BuildContext context, {service}) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withOpacity(0.6),
+    builder: (context) => ServiceFormDialog(
+      profissional: widget.profissional,
+      adminController: widget.adminController,
+      service: service,
+    ),
+  );
+}
 
   void _toggleServiceStatus(dynamic service) async {
     try {
@@ -1679,131 +1694,187 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: const Color(0xFF2A2A2A),
-      title: Text(
-        widget.service == null ? 'Adicionar Serviço' : 'Editar Serviço',
-        style: const TextStyle(color: Colors.white),
-      ),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<String>(
-                value: _selectedIcon,
-                style: const TextStyle(color: Colors.white),
-                dropdownColor: const Color(0xFF2A2A2A),
-                decoration: const InputDecoration(
-                  labelText: 'Ícone',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
-                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'content_cut', child: Text('Corte', style: TextStyle(color: Colors.white))),
-                  DropdownMenuItem(value: 'face', child: Text('Rosto', style: TextStyle(color: Colors.white))),
-                  DropdownMenuItem(value: 'spa', child: Text('Spa', style: TextStyle(color: Colors.white))),
-                  DropdownMenuItem(value: 'brush', child: Text('Pincel', style: TextStyle(color: Colors.white))),
-                  DropdownMenuItem(value: 'local_bar', child: Text('Barba', style: TextStyle(color: Colors.white))),
-                ],
-                onChanged: (value) => setState(() => _selectedIcon = value!),
+Widget build(BuildContext context) {
+  return DraggableScrollableSheet(
+    initialChildSize: 0.85,
+    minChildSize: 0.5,
+    maxChildSize: 0.95,
+    expand: false,
+    builder: (context, scrollController) {
+      return Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF2A2A2A),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 44,
+              height: 4.5,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.16),
+                borderRadius: BorderRadius.circular(10),
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _nomeController,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  labelText: 'Nome do Serviço',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
-                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
-                ),
-                validator: (value) => value == null || value.isEmpty ? 'Campo obrigatório' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _descricaoController,
-                style: const TextStyle(color: Colors.white),
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Descrição (opcional)',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
-                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
                 children: [
                   Expanded(
-                    child: TextFormField(
-                      controller: _precoController,
-                      style: const TextStyle(color: Colors.white),
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Preço (€)',
-                        labelStyle: TextStyle(color: Colors.white70),
-                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
-                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) return 'Campo obrigatório';
-                        if (double.tryParse(value) == null) return 'Valor inválido';
-                        return null;
-                      },
+                    child: Text(
+                      widget.service == null ? 'Adicionar Serviço' : 'Editar Serviço',
+                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _duracaoController,
-                      style: const TextStyle(color: Colors.white),
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Duração (min)',
-                        labelStyle: TextStyle(color: Colors.white70),
-                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
-                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) return 'Campo obrigatório';
-                        if (int.tryParse(value) == null) return 'Valor inválido';
-                        return null;
-                      },
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white70),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              SwitchListTile(
-                title: const Text('Ativo', style: TextStyle(color: Colors.white)),
-                value: _ativo,
-                onChanged: (value) => setState(() => _ativo = value),
-                activeColor: Colors.green,
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: scrollController,
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      DropdownButtonFormField<String>(
+                        value: _selectedIcon,
+                        style: const TextStyle(color: Colors.white),
+                        dropdownColor: const Color(0xFF2A2A2A),
+                        decoration: const InputDecoration(
+                          labelText: 'Ícone',
+                          labelStyle: TextStyle(color: Colors.white70),
+                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
+                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'content_cut', child: Text('Corte', style: TextStyle(color: Colors.white))),
+                          DropdownMenuItem(value: 'face', child: Text('Rosto', style: TextStyle(color: Colors.white))),
+                          DropdownMenuItem(value: 'spa', child: Text('Spa', style: TextStyle(color: Colors.white))),
+                          DropdownMenuItem(value: 'brush', child: Text('Pincel', style: TextStyle(color: Colors.white))),
+                          DropdownMenuItem(value: 'local_bar', child: Text('Barba', style: TextStyle(color: Colors.white))),
+                        ],
+                        onChanged: (value) => setState(() => _selectedIcon = value!),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _nomeController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: const InputDecoration(
+                          labelText: 'Nome do Serviço',
+                          labelStyle: TextStyle(color: Colors.white70),
+                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
+                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+                        ),
+                        validator: (value) => value == null || value.isEmpty ? 'Campo obrigatório' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _descricaoController,
+                        style: const TextStyle(color: Colors.white),
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          labelText: 'Descrição (opcional)',
+                          labelStyle: TextStyle(color: Colors.white70),
+                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
+                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _precoController,
+                              style: const TextStyle(color: Colors.white),
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Preço (€)',
+                                labelStyle: TextStyle(color: Colors.white70),
+                                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
+                                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) return 'Campo obrigatório';
+                                if (double.tryParse(value) == null) return 'Valor inválido';
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _duracaoController,
+                              style: const TextStyle(color: Colors.white),
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Duração (min)',
+                                labelStyle: TextStyle(color: Colors.white70),
+                                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
+                                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) return 'Campo obrigatório';
+                                if (int.tryParse(value) == null) return 'Valor inválido';
+                                return null;
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      SwitchListTile(
+                        title: const Text('Ativo', style: TextStyle(color: Colors.white)),
+                        value: _ativo,
+                        onChanged: (value) => setState(() => _ativo = value),
+                        activeColor: Colors.green,
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                              ),
+                              child: const Text('Cancelar', style: TextStyle(color: Colors.white70)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: _saveService,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              child: Text(widget.service == null ? 'Adicionar' : 'Salvar'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar', style: TextStyle(color: Colors.white70)),
-        ),
-        ElevatedButton(
-          onPressed: _saveService,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            foregroundColor: Colors.white,
-          ),
-          child: Text(widget.service == null ? 'Adicionar' : 'Salvar'),
-        ),
-      ],
-    );
-  }
+      );
+    },
+  );
+}
 
   void _saveService() async {
     if (!_formKey.currentState!.validate()) return;
