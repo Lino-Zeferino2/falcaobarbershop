@@ -105,22 +105,25 @@ class _HomeAdminState extends State<HomeAdmin> {
     } catch (_) {}
   }
 
-  Future<void> _loadRecentClients() async {
-    try {
-      final snap = await firestore
-          .collection('clientes')
-          .where('role', isEqualTo: 'cliente')
-          .orderBy('createdAt', descending: true)
-          .limit(5)
-          .get();
-      if (mounted) {
-        setState(() {
-          _recentClients = snap.docs.map((d) => d.data()).toList();
-        });
-      }
-    } catch (_) {}
+Future<void> _loadRecentClients() async {
+  try {
+    final snap = await firestore
+        .collection('clientes')
+        .where('role', isEqualTo: 'cliente')
+        .orderBy('createdAt', descending: true)
+        .limit(5)
+        .get();
+    if (mounted) {
+      setState(() {
+        _recentClients = snap.docs.map((d) => d.data()).toList();
+      });
+    }
+  } catch (e) {
+    debugPrint('Erro ao carregar clientes recentes: $e');
+    // Opcional: mostrar um SnackBar ou estado de erro visível no card,
+    // em vez de simplesmente ficar vazio sem explicação.
   }
-
+}
   @override
   void dispose() {
     _searchController.dispose();
@@ -434,7 +437,7 @@ Widget _statsGrid(bool isMobile) {
   final stats = [
     _StatData('Agendamentos hoje', '${_dashboardStats?['todayAppointments'] ?? 0}',
         Icons.calendar_today_outlined, const Color(0xFF3B82F6)),
-    _StatData('Clientes activos', '${_dashboardStats?['activeBarbers'] ?? 0}',
+    _StatData('Total Clientes', '${_dashboardStats?['activeBarbers'] ?? 0}',
         Icons.people_outline, const Color(0xFF10B981)),
     _StatData('Receita estimada hoje', '€${(_dashboardStats?['estimatedRevenue'] ?? 0.0).toStringAsFixed(2)}',
         Icons.euro_outlined, const Color(0xFFB22222)),
@@ -789,10 +792,12 @@ Widget _statCard(_StatData s) {
           ),
           const SizedBox(height: 12),
           if (_recentClients.isEmpty)
-            const Center(child: Padding(
-              padding: EdgeInsets.all(24),
-              child: Text('Sem clientes', style: TextStyle(color: Colors.white38)),
-            ))
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Text('Sem clientes', style: TextStyle(color: Colors.white38)),
+              ),
+            )
           else
             ..._recentClients.map((c) => Container(
               padding: const EdgeInsets.symmetric(vertical: 10),
