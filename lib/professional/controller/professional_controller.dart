@@ -26,8 +26,7 @@ class ProfessionalController {
     const weekdays = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
     return weekdays[weekday - 1];
   }
-
-  // Get current barber profile
+// Get current barber profile
 Future<UserModel?> getCurrentBarberProfile() async {
     try {
       final user = _auth.currentUser;
@@ -43,6 +42,144 @@ Future<UserModel?> getCurrentBarberProfile() async {
       return null;
     }
   }
+
+  // Logout
+  Future<void> logout() async {
+    await _auth.signOut();
+  }
+    // Update appointment time
+  Future<void> updateAppointmentTime(String appointmentId, DateTime newDateTime) async {
+    try {
+      await _firestore.collection('agendamentos').doc(appointmentId).update({
+        'date': newDateTime.toIso8601String().split('T')[0], // Date part
+        'time': '${newDateTime.hour.toString().padLeft(2, '0')}:${newDateTime.minute.toString().padLeft(2, '0')}', // Time part
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Error updating appointment time: $e');
+      rethrow;
+    }
+  }
+
+  // Update appointment service
+  Future<void> updateAppointmentService(String appointmentId, String newServiceName, double newPrice, int newDuration) async {
+    try {
+      await _firestore.collection('agendamentos').doc(appointmentId).update({
+        'service': newServiceName,
+        'price': newPrice,
+        'duration': newDuration,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Error updating appointment service: $e');
+      rethrow;
+    }
+  }
+ // --- DASHBOARD PROFESSIONAL (GRÁFICOS) ---
+  // Receita por dia (últimos 14 dias) baseada em appointments.price
+  Future<List<Map<String, dynamic>>> getRevenueByDayLastNDays({int days = 14}) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return [];
+
+      final now = DateTime.now();
+      final startDate = DateTime(now.year, now.month, now.day).subtract(Duration(days: days - 1));
+      final endDateExclusive = DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
+
+      final [queryFalca, queryDefault] = await Future.wait([
+        _firestore
+            .collection('agendamentos')
+            .where('professional', isEqualTo: user.uid)
+            .get(),
+        _firestoreDefault
+            .collection('agendamentos')
+            .where('professional', isEqualTo: user.uid)
+            .get(),
+      ]);
+
+      final allDocs = [
+        ...queryFalca.docs.map((doc) => _mapBookingToAppointment(doc, sourceDb: 'falcaobarbershop')),
+        ...queryDefault.docs.map((doc) => _mapBookingToAppointment(doc, sourceDb: '(default)')),
+      ];
+
+      final revenueByDay = <String, double>{};
+      final dateByKey = <String, DateTime>{};
+
+      for (final d in Iterable.generate(days)) {
+        final date = startDate.add(Duration(days: d));
+        final key = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+        revenueByDay[key] = 0.0;
+        dateByKey[key] = date;
+      }
+
+      for (final appt in allDocs) {
+        final date = DateTime(appt.dateTime.year, appt.dateTime.month, appt.dateTime.day);
+        if (date.isBefore(startDate) || !date.isBefore(endDateExclusive)) continue;
+
+        final key = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+        revenueByDay[key] = (revenueByDay[key] ?? 0) + appt.price;
+      }
+
+      final keys = revenueByDay.keys.toList();
+      keys.sort((a, b) => dateByKey[a]!.compareTo(dateByKey[b]!));
+
+      return keys.map((k) => {
+            'date': dateByKey[k]!,
+            'value': revenueByDay[k] ?? 0.0,
+          }).toList();
+    } catch (e) {
+      print('Error getRevenueByDayLastNDays: $e');
+      return [];
+    }
+  }
+
+  // Top serviços por receita (top 7)
+  Future<List<Map<String, dynamic>>> getTopServicesByRevenue({int limit = 7}) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return [];
+
+      final [queryFalca, queryDefault] = await Future.wait([
+        _firestore
+            .collection('agendamentos')
+            .where('professional', isEqualTo: user.uid)
+            .get(),
+        _firestoreDefault
+            .collection('agendamentos')
+            .where('professional', isEqualTo: user.uid)
+            .get(),
+      ]);
+
+      final allDocs = [
+        ...queryFalca.docs.map((doc) => _mapBookingToAppointment(doc, sourceDb: 'falcaobarbershop')),
+        ...queryDefault.docs.map((doc) => _mapBookingToAppointment(doc, sourceDb: '(default)')),
+      ];
+
+      final revenueByService = <String, double>{};
+      for (final appt in allDocs) {
+        final service = appt.serviceName.trim().isEmpty ? 'Serviço' : appt.serviceName.trim();
+        revenueByService[service] = (revenueByService[service] ?? 0.0) + appt.price;
+      }
+
+      final sorted = revenueByService.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
+
+      return sorted.take(limit).map((e) => {'label': e.key, 'value': e.value}).toList();
+    } catch (e) {
+      print('Error getTopServicesByRevenue: $e');
+      return [];
+    }
+  }
+
+  
+
+
+
+
+
+
+
+  
 
   Stream<List<AppointmentModel>> _mergeTwoAppointmentStreams(
     Stream<List<AppointmentModel>> falcaStream,
@@ -93,7 +230,8 @@ Future<UserModel?> getCurrentBarberProfile() async {
 
     return controller.stream;
   }
-
+ 
+ // Get barber's appointments (today and future) - merges default + falcaobarbershop
   // Get barber's appointments (today and future) - merges default + falcaobarbershop
   Stream<List<AppointmentModel>> getBarberAppointments() {
     final user = _auth.currentUser;
@@ -763,38 +901,8 @@ Future<void> updateProfilePhoto(String fotoUrl) async {
       return [];
     }
   }
-
-  // Update appointment service
-  Future<void> updateAppointmentService(String appointmentId, String newServiceName, double newPrice, int newDuration) async {
-    try {
-      await _firestore.collection('agendamentos').doc(appointmentId).update({
-        'service': newServiceName,
-        'price': newPrice,
-        'duration': newDuration,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      print('Error updating appointment service: $e');
-      rethrow;
-    }
-  }
-
-  // Update appointment time
-  Future<void> updateAppointmentTime(String appointmentId, DateTime newDateTime) async {
-    try {
-      await _firestore.collection('agendamentos').doc(appointmentId).update({
-        'date': newDateTime.toIso8601String().split('T')[0], // Date part
-        'time': '${newDateTime.hour.toString().padLeft(2, '0')}:${newDateTime.minute.toString().padLeft(2, '0')}', // Time part
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      print('Error updating appointment time: $e');
-      rethrow;
-    }
-  }
-
-  // Logout
-  Future<void> logout() async {
-    await _auth.signOut();
-  }
 }
+
+
+
+
