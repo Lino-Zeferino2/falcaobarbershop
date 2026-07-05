@@ -16,6 +16,7 @@ import 'settings_page.dart';
 import 'notifications_page.dart';
 import 'posts_page.dart';
 import 'financial_stats_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeAdmin extends StatefulWidget {
   const HomeAdmin({super.key});
@@ -1447,6 +1448,28 @@ Widget _statCard(_StatData s) {
   }
 
   Widget _detailRow(String label, String value) {
+    final isPhoneRow = label.toLowerCase().contains('telefone');
+    if (isPhoneRow) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Row(
+          children: [
+            SizedBox(width: 80, child: Text(label, style: const TextStyle(color: Colors.white38, fontSize: 12))),
+            Expanded(
+              child: InkWell(
+                onTap: () => _makePhoneCall(value),
+                borderRadius: BorderRadius.circular(6),
+                child: Text(
+                  value,
+                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500, decoration: TextDecoration.underline),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
@@ -1457,6 +1480,31 @@ Widget _statCard(_StatData s) {
       ),
     );
   }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final raw = phoneNumber.trim();
+    if (raw.isEmpty) return;
+
+    final cleaned = raw.replaceAll(RegExp(r'[\s\-\(\)\+]'), '');
+
+    final telUri = Uri(scheme: 'tel', path: cleaned);
+    try {
+      if (await canLaunchUrl(telUri)) {
+        await launchUrl(telUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
+
+    // Fallback cross-platform: opens a call-like web/desktop handler via WhatsApp.
+    // (On web/desktop this typically opens in browser; on mobile it may open WhatsApp.)
+    final waUri = Uri.parse('https://wa.me/$cleaned');
+    try {
+      if (await canLaunchUrl(waUri)) {
+        await launchUrl(waUri, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {}
+  }
+
 
   // ─── SECÇÕES EXISTENTES (mantém lógica, melhora wrapper) ──────────────────
 
