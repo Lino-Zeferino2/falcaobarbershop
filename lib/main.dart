@@ -37,7 +37,7 @@ class MyApp extends StatelessWidget {
       checkerboardRasterCacheImages: false,
       checkerboardOffscreenLayers: false,
       showPerformanceOverlay: false,
-      title: 'Falcão',
+      title: 'Falcão BarberShop',
       theme: ThemeData(
         fontFamily: GoogleFonts.inter().fontFamily,
         colorScheme: const ColorScheme(
