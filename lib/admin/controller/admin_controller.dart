@@ -546,14 +546,9 @@ AppointmentModel _mapBookingToAppointmentFast(
             final userDoc = await _firestore.collection('clientes').doc(data['userId']).get();
 
           if (userDoc.exists) {
-            final userData = userDoc.data() as Map<String, dynamic>;
-            final currentPoints = (userData['points'] ?? 0.0).toDouble();
-            if (currentPoints < 100) {
-              await _firestore.collection('clientes').doc(data['userId']).update({
+            // Regra: pontos só são creditados quando o agendamento é concluído (status: completed)
+            // Portanto, confirmar (status: confirmed) não altera pontos nem histórico.
 
-                'points': currentPoints + 10,
-              });
-            }
           }
         }
       }
@@ -739,11 +734,30 @@ AppointmentModel _mapBookingToAppointmentFast(
         'status': 'completed',
         'concludedAt': Timestamp.now(),
       });
+
+      final doc = await _firestore.collection('agendamentos').doc(appointmentId).get();
+      if (!doc.exists) return;
+
+      final data = doc.data() as Map<String, dynamic>;
+      final userId = data['userId'];
+      if (userId == null) return;
+
+      // Credit points + history (sem limite)
+      await _firestore.collection('clientes').doc(userId).update({
+        'points': FieldValue.increment(10),
+      });
+
+      await _firestore.collection('clientes').doc(userId).collection('pointsHistory').add({
+        'type': 'earned',
+        'description': 'Agendamento concluído: ${data['service'] ?? ''}',
+        'points': 10,
+        'date': Timestamp.now(),
+      });
     } catch (e) {
-      // print('Error completing appointment: $e');
       rethrow;
     }
   }
+
 
   // Obter notificações de novos agendamentos (últimas 24h)
   Future<int> getNewAppointmentsCount() async {

@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../firestore_instance.dart';
 import '../controller/admin_controller.dart';
@@ -1263,25 +1262,8 @@ Widget _statCard(_StatData s) {
     try {
       await _adminController.completeAppointment(id);
 
-      // Credita pontos ao cliente
-      final doc = await firestore.collection('agendamentos').doc(id.contains('_') ? id.split('_').sublist(1).join('_') : id).get();
-      if (doc.exists) {
-        final data = doc.data()!;
-        final userId = data['userId'];
-        if (userId != null) {
-          await firestore.collection('clientes').doc(userId).update({
-            'points': FieldValue.increment(10),
-          });
-          await firestore.collection('clientes').doc(userId).collection('pointsHistory').add({
-            'type': 'earned',
-            'description': 'Agendamento concluído: ${data['service'] ?? ''}',
-            'points': 10,
-            'date': Timestamp.now(),
-          });
-        }
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Agendamento concluído')));
 
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Agendamento concluído · +10 pts creditados')));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
     }
