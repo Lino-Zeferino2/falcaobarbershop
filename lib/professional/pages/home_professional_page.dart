@@ -1681,7 +1681,7 @@ class _HomeProfessionalPageState extends State<HomeProfessionalPage> {
     final initial = _barberProfile?.name.trim().isNotEmpty == true ? _barberProfile!.name.trim().substring(0, 1).toUpperCase() : 'B';
 
     if (photoUrl != null && photoUrl.isNotEmpty) {
-      return ClipOval(
+    return ClipOval(
         child: Image.network(
           photoUrl,
           width: size,
