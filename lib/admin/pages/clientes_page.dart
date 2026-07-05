@@ -7,6 +7,8 @@ import 'dart:html' as html show Blob, Url;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 
 import '../../user/model/user_model.dart';
 import '../controller/admin_controller.dart';
@@ -222,7 +224,27 @@ class _ClientesPageState extends State<ClientesPage> {
                                 const SizedBox(height: 8),
                                 _infoRow(Icons.email, 'Email', cliente.email),
                                 const SizedBox(height: 4),
-                                _infoRow(Icons.phone, 'Telefone', cliente.phone),
+                                InkWell(
+                                  onTap: () => launchUrl(
+                                    Uri.parse('tel:${cliente.phone}'),
+                                    mode: LaunchMode.externalApplication,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.phone, color: Colors.white70, size: 16),
+                                      const SizedBox(width: 8),
+                                      Text('Telefone: ', style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
+                                      Expanded(
+                                        child: Text(
+                                          cliente.phone,
+                                          style: const TextStyle(color: Colors.blueAccent, decoration: TextDecoration.underline),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
                                 const SizedBox(height: 4),
                                 _infoRow(Icons.location_city, 'Cidade', cliente.city),
                                 const SizedBox(height: 4),
@@ -657,7 +679,27 @@ class _ClienteDetailsDialogState extends State<ClienteDetailsDialog> {
                             const SizedBox(height: 8),
                             _infoRow(Icons.email, 'Email', widget.cliente.email),
                             const SizedBox(height: 8),
-                            _infoRow(Icons.phone, 'Telefone', widget.cliente.phone),
+                            InkWell(
+                              onTap: () => launchUrl(
+                                Uri.parse('tel:${widget.cliente.phone}'),
+                                mode: LaunchMode.externalApplication,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.phone, color: Colors.white70, size: 16),
+                                  const SizedBox(width: 8),
+                                  Text('Telefone: ', style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
+                                  Expanded(
+                                    child: Text(
+                                      widget.cliente.phone,
+                                      style: const TextStyle(color: Colors.blueAccent, decoration: TextDecoration.underline),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
                             const SizedBox(height: 8),
                             _infoRow(Icons.location_city, 'Cidade', widget.cliente.city),
                             const SizedBox(height: 8),
