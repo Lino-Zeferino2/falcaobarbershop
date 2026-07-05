@@ -307,13 +307,22 @@ class AuthController {
   // Reset de senha
   Future<void> resetPassword(String email) async {
     try {
-      await _auth.sendPasswordResetEmail(email: email);
+      // Define actionCodeSettings para garantir que o link/fluxo do reset funcione
+      // corretamente no domínio do seu app (ajuste a URL se necessário).
+      await _auth.sendPasswordResetEmail(
+        email: email,
+        actionCodeSettings: ActionCodeSettings(
+          url: 'https://falcaobarbershopv2.web.app/login',
+          handleCodeInApp: true,
+        ),
+      );
     } on FirebaseAuthException catch (e) {
       throw _handleAuthError(e);
     } catch (e) {
       throw 'Erro ao enviar email de recuperação: $e';
     }
   }
+
 
   // Tratamento de erros do Firebase Auth
   String _handleAuthError(FirebaseAuthException e) {
