@@ -244,11 +244,7 @@ class _HomeProfessionalPageState extends State<HomeProfessionalPage> {
             children: [
               _buildAvatar(size: 40, fontSize: 15),
               const SizedBox(width: 12),
-              Text(
-                'Olá, ${_barberProfile?.name.split(' ').first ?? 'Barbeiro'}!',
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
-              ),
-            ],
+             ],
           ),
         ],
       ),
